@@ -236,11 +236,24 @@ tr:nth-child(even) td { background: #f9fafb; }
 
   <!-- VENDORS TAB -->
   <div id="tab-vendors" style="display:none">
-    <div class="section-header">Vendor Mix — 2026</div>
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+      <div class="section-header" style="margin:0">Q1 2026 Vendor Performance</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn-sm" id="vl-all" onclick="setVendorLoc('all',this)" style="background:var(--navy);color:white;border-color:var(--navy)">Both Stores</button>
+        <button class="btn-sm" id="vl-F" onclick="setVendorLoc('F',this)">Foscoe</button>
+        <button class="btn-sm" id="vl-M" onclick="setVendorLoc('M',this)">Mall</button>
+      </div>
+    </div>
     <div class="table-wrap"><table id="vendor-table"></table></div>
-    <div class="chart-wrap" style="margin-top:16px">
-      <div class="chart-title">Vendor Revenue Share</div>
-      <div class="chart-container"><canvas id="vendor-chart"></canvas></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
+      <div class="chart-wrap">
+        <div class="chart-title">Revenue Share</div>
+        <div class="chart-container"><canvas id="vendor-chart"></canvas></div>
+      </div>
+      <div class="chart-wrap">
+        <div class="chart-title">Gross Margin % by Vendor</div>
+        <div class="chart-container"><canvas id="vendor-gm-chart"></canvas></div>
+      </div>
     </div>
   </div>
 
@@ -568,30 +581,146 @@ function renderMonthly() {
   $('attach-table').innerHTML = ahead + '<tbody>' + arows.join('') + targetRow + '</tbody>';
 }
 
-function renderVendors(rows) {
-  const vendors = {};
-  rows.filter(r=>r.mt&&r.s&&r.ve).forEach(r => {
-    if (!vendors[r.ve]) vendors[r.ve] = {sales:0,revenue:0};
-    vendors[r.ve].sales++;
-    vendors[r.ve].revenue += r.t||0;
+// ── Q1 VENDOR DATA (from FoscoeSupplierQ1.xlsx + MallSupplierQ1.xlsx) ─────────
+const Q1_VENDORS = {
+  F: [
+    {vendor:'Stearns And Foster',units:16,retail:49184,cost:21076,profit:28108,gm:57.15,avg:2893.18},
+    {vendor:'Helix',units:19,retail:44313,cost:16015,profit:28298,gm:63.86,avg:2215.65},
+    {vendor:'Southerland',units:65,retail:26918,cost:11526.5,profit:15391.5,gm:57.18,avg:640.90},
+    {vendor:'Ekornes',units:13,retail:22391,cost:11337.7,profit:11053.3,gm:49.36,avg:2239.10},
+    {vendor:'Sealy',units:8,retail:12872,cost:5590,profit:7282,gm:56.57,avg:1430.22},
+    {vendor:'Sherwood',units:31,retail:12271,cost:4310,profit:7961,gm:64.88,avg:645.84},
+    {vendor:'Smartflex',units:32,retail:11400,cost:5542.48,profit:5857.52,gm:51.38,avg:380.00},
+    {vendor:'Tempur-Pedic',units:5,retail:7666.31,cost:3779.19,profit:3887.12,gm:50.70,avg:1533.26},
+    {vendor:'Malouf',units:74,retail:5220.78,cost:2536.15,profit:2684.63,gm:51.42,avg:90.01},
+    {vendor:'BedTech',units:5,retail:3300,cost:1658.01,profit:1641.99,gm:49.76,avg:660.00},
+    {vendor:'Casper',units:15,retail:2646,cost:1815.5,profit:830.5,gm:31.39,avg:294.00},
+    {vendor:'Technogel',units:7,retail:1070,cost:657.59,profit:412.41,gm:38.54,avg:178.33},
+    {vendor:'Dreamfit',units:11,retail:995.09,cost:1012.38,profit:-17.29,gm:-1.74,avg:99.51},
+    {vendor:'Fashon Bed Group',units:3,retail:897,cost:449.39,profit:447.61,gm:49.90,avg:299.00},
+    {vendor:'Hollywood Bed',units:9,retail:700,cost:398.25,profit:301.75,gm:43.11,avg:87.50},
+    {vendor:'Ashley',units:3,retail:627,cost:199.84,profit:427.16,gm:68.13,avg:313.50},
+    {vendor:'Sleeptone',units:17,retail:418,cost:347.2,profit:70.8,gm:16.94,avg:29.86},
+    {vendor:'Brooklyn Bedding',units:1,retail:199,cost:79,profit:120,gm:60.30,avg:66.33},
+  ],
+  M: [
+    {vendor:'Helix',units:11,retail:27089,cost:9209,profit:17880,gm:66.00,avg:2083.77},
+    {vendor:'Casper',units:9,retail:18562.93,cost:7775,profit:10787.93,gm:58.12,avg:2651.85},
+    {vendor:'Sealy',units:14,retail:23186,cost:10538,profit:12648,gm:54.55,avg:1545.73},
+    {vendor:'Southerland',units:24,retail:13217,cost:4592.5,profit:8624.5,gm:65.25,avg:881.13},
+    {vendor:'Stearns And Foster',units:3,retail:9297,cost:3884,profit:5413,gm:58.22,avg:3099.00},
+    {vendor:'Smartflex',units:16,retail:5650,cost:3797.7,profit:1852.3,gm:32.78,avg:434.62},
+    {vendor:'Tempur-Pedic',units:12,retail:5695,cost:3064.91,profit:2630.09,gm:46.18,avg:517.73},
+    {vendor:'Malouf',units:48,retail:4168.66,cost:2133.42,profit:2035.24,gm:48.82,avg:94.74},
+    {vendor:'BedTech',units:10,retail:8500,cost:4420.86,profit:4079.14,gm:47.99,avg:1062.50},
+    {vendor:'Sherwood',units:12,retail:6522,cost:2472,profit:4050,gm:62.10,avg:543.50},
+    {vendor:'Technogel',units:6,retail:1224,cost:547.18,profit:676.82,gm:55.30,avg:204.00},
+    {vendor:'Dreamfit',units:8,retail:810,cost:758.26,profit:51.74,gm:6.39,avg:162.00},
+    {vendor:'Sleeptone',units:23,retail:883,cost:515.24,profit:367.76,gm:41.65,avg:55.19},
+    {vendor:'Hollywood Bed',units:2,retail:900,cost:355,profit:545,gm:60.56,avg:450.00},
+    {vendor:'Fashon Bed Group',units:1,retail:249,cost:121.98,profit:127.02,gm:51.01,avg:249.00},
+    {vendor:'Brooklyn Bedding',units:2,retail:169,cost:104,profit:65,gm:38.46,avg:84.50},
+    {vendor:'Ashley',units:1,retail:69.99,cost:22.25,profit:47.74,gm:68.21,avg:69.99},
+  ]
+};
+
+let currentVendorLoc = 'all';
+function setVendorLoc(loc, btn) {
+  currentVendorLoc = loc;
+  document.querySelectorAll('#vl-all,#vl-F,#vl-M').forEach(b=>{
+    b.style.background=''; b.style.color=''; b.style.borderColor='';
   });
-  const total = Object.values(vendors).reduce((s,v)=>s+v.revenue,0);
-  const sorted = Object.entries(vendors).sort((a,b)=>b[1].revenue-a[1].revenue);
-  const thead = `<thead><tr><th style="text-align:left">Vendor</th><th>Units</th><th>Revenue</th><th>Mix %</th><th>Avg $</th></tr></thead>`;
-  const vrows = sorted.map(([name,v]) => `<tr>
-    <td>${name}</td><td>${v.sales}</td><td>${money(v.revenue)}</td>
-    <td>${pct(v.revenue/total)}</td><td>${money(v.revenue/v.sales)}</td>
+  btn.style.background='var(--navy)'; btn.style.color='white'; btn.style.borderColor='var(--navy)';
+  renderVendors(getFiltered());
+}
+
+function renderVendors(rows) {
+  // Build combined vendor list based on location filter
+  const locFilter = currentVendorLoc;
+  const sources = locFilter === 'all' ? [...Q1_VENDORS.F, ...Q1_VENDORS.M]
+                : locFilter === 'F'   ? Q1_VENDORS.F
+                :                       Q1_VENDORS.M;
+
+  // Merge duplicate vendor names when showing both stores
+  const merged = {};
+  sources.forEach(v => {
+    if (!merged[v.vendor]) merged[v.vendor] = {vendor:v.vendor,units:0,retail:0,cost:0,profit:0};
+    merged[v.vendor].units  += v.units;
+    merged[v.vendor].retail += v.retail;
+    merged[v.vendor].cost   += v.cost;
+    merged[v.vendor].profit += v.profit;
+  });
+  const list = Object.values(merged)
+    .map(v => ({...v, gm: v.retail>0 ? (v.profit/v.retail*100) : 0, avg: v.units>0 ? v.retail/v.units : 0}))
+    .sort((a,b)=>b.retail-a.retail);
+
+  const totalRetail = list.reduce((s,v)=>s+v.retail,0);
+  const totalProfit = list.reduce((s,v)=>s+v.profit,0);
+  const totalUnits  = list.reduce((s,v)=>s+v.units,0);
+  const overallGM   = totalRetail>0 ? (totalProfit/totalRetail*100) : 0;
+
+  const gmColor = gm => gm >= 55 ? 'good' : gm >= 45 ? 'warn' : 'bad';
+
+  const thead = `<thead><tr>
+    <th style="text-align:left">Vendor</th>
+    <th>Units</th><th>Revenue</th><th>Mix %</th>
+    <th>Cost</th><th>Profit</th><th>GM %</th><th>Avg Sale</th>
+  </tr></thead>`;
+  const vrows = list.map(v => `<tr>
+    <td><strong>${v.vendor}</strong></td>
+    <td>${v.units}</td>
+    <td>${money(v.retail)}</td>
+    <td>${pct(v.retail/totalRetail)}</td>
+    <td>${money(v.cost)}</td>
+    <td>${money(v.profit)}</td>
+    <td class="${gmColor(v.gm)}">${v.gm.toFixed(1)}%</td>
+    <td>${money(v.avg)}</td>
+  </tr>`);
+  vrows.push(`<tr class="total-row">
+    <td>TOTAL</td><td>${totalUnits}</td><td>${money(totalRetail)}</td><td>100%</td>
+    <td>${money(list.reduce((s,v)=>s+v.cost,0))}</td>
+    <td>${money(totalProfit)}</td>
+    <td class="${gmColor(overallGM)}">${overallGM.toFixed(1)}%</td>
+    <td>${money(totalRetail/totalUnits)}</td>
   </tr>`);
   $('vendor-table').innerHTML = thead + '<tbody>' + vrows.join('') + '</tbody>';
+
+  // Revenue share doughnut
+  const COLORS = ['#0B2E7C','#EB9222','#1E3A8A','#4F86C6','#6B9FD4','#94A3B8',
+    '#16a34a','#d97706','#dc2626','#7c3aed','#0891b2','#be185d',
+    '#854d0e','#166534','#1e40af','#9f1239','#065f46','#4338ca'];
   destroyChart('vendor-chart');
   charts['vendor-chart'] = new Chart($('vendor-chart'), {
     type: 'doughnut',
     data: {
-      labels: sorted.map(([n])=>n),
-      datasets:[{data:sorted.map(([,v])=>Math.round(v.revenue)),
-        backgroundColor:['#0B2E7C','#EB9222','#1E3A8A','#4F86C6','#6B9FD4','#94A3B8'],borderWidth:2}]
+      labels: list.map(v=>v.vendor),
+      datasets:[{data:list.map(v=>Math.round(v.retail)),
+        backgroundColor:COLORS,borderWidth:2}]
     },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:11}}}}}
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{position:'right',labels:{font:{size:10},boxWidth:12}}}}
+  });
+
+  // GM% bar chart
+  destroyChart('vendor-gm-chart');
+  const gmList = [...list].sort((a,b)=>b.gm-a.gm);
+  charts['vendor-gm-chart'] = new Chart($('vendor-gm-chart'), {
+    type: 'bar',
+    data: {
+      labels: gmList.map(v=>v.vendor),
+      datasets:[{
+        label:'GM %',
+        data: gmList.map(v=>+v.gm.toFixed(1)),
+        backgroundColor: gmList.map(v=>v.gm>=55?'#16a34a':v.gm>=45?'#d97706':'#dc2626'),
+        borderRadius:3
+      }]
+    },
+    options:{
+      indexAxis:'y',responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{x:{min:0,max:80,ticks:{callback:v=>v+'%'},grid:{color:'#e5e7eb'}},
+               y:{ticks:{font:{size:10}}}}
+    }
   });
 }
 
