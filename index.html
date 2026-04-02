@@ -157,6 +157,16 @@ tr:nth-child(even) td { background: #f9fafb; }
 
 <div class="filters">
   <div class="filter-group">
+    <span class="filter-label">Quarter</span>
+    <select class="filter-select" id="f-quarter" onchange="onQuarterChange()">
+      <option value="All">All Quarters</option>
+      <option value="Q1">Q1 (Jan–Mar)</option>
+      <option value="Q2">Q2 (Apr–Jun)</option>
+      <option value="Q3">Q3 (Jul–Sep)</option>
+      <option value="Q4">Q4 (Oct–Dec)</option>
+    </select>
+  </div>
+  <div class="filter-group">
     <span class="filter-label">Month</span>
     <select class="filter-select" id="f-month" onchange="render()">
       <option value="All">All Months</option>
@@ -189,7 +199,7 @@ tr:nth-child(even) td { background: #f9fafb; }
   <button class="tab" onclick="showTab('monthly',this)">Monthly</button>
   <button class="tab" onclick="showTab('vendors',this)">Vendors</button>
   <button class="tab" onclick="showTab('exchanges',this)">Exchanges</button>
-  <button class="tab" onclick="showTab('q1summary',this)">Q1 Summary</button>
+
 </div>
 
 <div class="content">
@@ -241,19 +251,6 @@ tr:nth-child(even) td { background: #f9fafb; }
   </div>
 
   <!-- Q1 SUMMARY TAB -->
-  <div id="tab-q1summary" style="display:none">
-    <div class="section-header" style="margin-bottom:12px">Q1 2026 Final Results — Jan · Feb · Mar</div>
-    <div class="card-grid" id="q1-kpi-cards"></div>
-    <div style="height:16px"></div>
-    <div class="section-header" style="margin-bottom:8px">Q1 Attachment Rates</div>
-    <div class="attach-grid" id="q1-attach-cards"></div>
-    <div style="height:16px"></div>
-    <div class="section-header" style="margin-bottom:8px">Q1 by Location</div>
-    <div class="loc-grid" id="q1-loc-cards"></div>
-    <div style="height:16px"></div>
-    <div class="section-header" style="margin-bottom:8px">Q1 Rep Performance</div>
-    <div class="table-wrap"><table id="q1-rep-table"></table></div>
-  </div>
 </div>
 
 <script>
@@ -318,8 +315,13 @@ function calc(rows) {
 // ── FILTERS ──────────────────────────────────────────────────────────────────
 function getFiltered() {
   const raw = liveData || RAW;
-  const fm = $('f-month').value, fl = $('f-loc').value, fr = $('f-rep').value;
+  const fq = $('f-quarter').value, fm = $('f-month').value, fl = $('f-loc').value, fr = $('f-rep').value;
+  const Q_MONTHS = {
+    Q1: ['Jan','Feb','Mar'], Q2: ['Apr','May','Jun'],
+    Q3: ['Jul','Aug','Sep'], Q4: ['Oct','Nov','Dec']
+  };
   return raw.filter(r =>
+    (fq === 'All' || Q_MONTHS[fq].includes(r.m)) &&
     (fm === 'All' || r.m === fm) &&
     (fl === 'All' || r.l === fl) &&
     (fr === 'All' || r.r === fr)
@@ -358,8 +360,13 @@ function renderRepSummary(rows) {
 function render() {
   const rows = getFiltered();
   const m = calc(rows);
-  const fm = $('f-month').value;
-  const mGoal = fm !== 'All' ? (GOALS.monthly[fm]||0) : Object.values(GOALS.monthly).reduce((a,b)=>a+b,0);
+  const fq = $('f-quarter').value, fm = $('f-month').value;
+  const Q_MONTHS = {
+    Q1: ['Jan','Feb','Mar'], Q2: ['Apr','May','Jun'],
+    Q3: ['Jul','Aug','Sep'], Q4: ['Oct','Nov','Dec']
+  };
+  const activeMonths = fq !== 'All' ? Q_MONTHS[fq] : (fm !== 'All' ? [fm] : Object.keys(GOALS.monthly));
+  const mGoal = activeMonths.reduce((s, mo) => s + (GOALS.monthly[mo]||0), 0);
   const goalDiff = m.revenue - mGoal;
 
   renderKPIs(m, mGoal, goalDiff);
@@ -615,18 +622,25 @@ function showTab(name, btn) {
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
   btn.dataset.tab = name;
-  ['overview','reps','monthly','vendors','exchanges','q1summary'].forEach(t => {
+  ['overview','reps','monthly','vendors','exchanges'].forEach(t => {
     $('tab-'+t).style.display = t===name ? '' : 'none';
   });
   if (name==='reps') renderReps(getFiltered());
   if (name==='monthly') renderMonthly();
   if (name==='vendors') renderVendors(getFiltered());
   if (name==='exchanges') renderExchanges(getFiltered());
-  if (name==='q1summary') renderQ1Summary();
 }
 
-// ── Q1 SUMMARY ───────────────────────────────────────────────────────────────
-function renderQ1Summary() {
+// ── QUARTER FILTER HELPER ─────────────────────────────────────────────────────
+function onQuarterChange() {
+  // When a quarter is selected, reset the month filter to "All" so they don't conflict
+  const fq = $('f-quarter').value;
+  if (fq !== 'All') $('f-month').value = 'All';
+  render();
+}
+
+// ── (removed Q1 Summary tab — now handled by Quarter dropdown filter) ─────────
+function renderQ1Summary_REMOVED() {
   const raw = liveData || RAW;
   // Filter to Q1 months only
   const q1 = raw.filter(r => r.m === 'Jan' || r.m === 'Feb' || r.m === 'Mar');
