@@ -148,7 +148,7 @@ tr:nth-child(even) td { background: #f9fafb; }
   <h4>Connect Google Sheets CSV</h4>
   <p>1. Google Sheet → File → Share → Publish to web → Form Responses tab → CSV → Publish<br>2. Copy the URL and paste below</p>
   <div class="connect-row">
-    <input class="connect-input" id="sheet-url-input" type="text" placeholder="https://docs.google.com/spreadsheets/d/e/..." value="https://docs.google.com/spreadsheets/d/e/2PACX-1vRgZDVtNKOlTPI-m_i96nNrhxgZFODbjMC1kbWnM7kmmG3m1U-FRUBFZMIqWCD1OORxVAr9BnbyqIvj/pub?gid=2120876281&single=true&output=csv"/>
+    <input class="connect-input" id="sheet-url-input" type="text" placeholder="https://docs.google.com/spreadsheets/d/e/..." value="https://docs.google.com/spreadsheets/d/e/2PACX-1vRgZDVtNKOlTPI-m_i96nNrhxgZFODbjMC1kbWnM7kmmG3m1U-FRUBFZMIqWCD1OORxVAr9BnbyqIvj/pub?gid=22940601&single=true&output=csv"/>
     <button class="btn-connect" onclick="connectSheet()">Connect</button>
   </div>
 </div>
@@ -279,7 +279,7 @@ const GOALS = {
 const Y25_MONTHLY = { Jan:107915,Feb:121648,Mar:111518,Apr:0,May:0,Jun:0,Jul:0,Aug:0,Sep:0,Oct:0,Nov:0,Dec:0 };
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const REPS = ['Becca','Brandon','Patrick','Vance','Marc'];
-const SHEETS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRgZDVtNKOlTPI-m_i96nNrhxgZFODbjMC1kbWnM7kmmG3m1U-FRUBFZMIqWCD1OORxVAr9BnbyqIvj/pub?gid=2120876281&single=true&output=csv";
+const SHEETS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRgZDVtNKOlTPI-m_i96nNrhxgZFODbjMC1kbWnM7kmmG3m1U-FRUBFZMIqWCD1OORxVAr9BnbyqIvj/pub?gid=22940601&single=true&output=csv";
 // Netlify serverless proxy (primary) + public fallbacks
 const CORS_PROXIES = [
   url => `/api/proxy?url=${encodeURIComponent(url)}`,
