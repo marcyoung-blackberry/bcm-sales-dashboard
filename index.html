@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>BCM Sales Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --navy: #0B2E7C;
+  --navy2: #1E3A8A;
+  --gold: #EB9222;
+  --bg: #EDF1F8;
+  --white: #ffffff;
+  --green: #16a34a;
+  --green-bg: #dcfce7;
+  --amber: #d97706;
+  --amber-bg: #fef3c7;
+  --red: #dc2626;
+  --red-bg: #fee2e2;
+  --gray: #6b7280;
+  --light: #94a3b8;
+  --border: #e5e7eb;
+  --text: #1f2937;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: 'Segoe UI', Arial, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* HEADER */
+.header { background: var(--navy); padding: 0 24px; display: flex; align-items: center; justify-content: space-between; height: 56px; }
+.header-title { font-size: 18px; font-weight: 800; color: var(--gold); letter-spacing: -0.3px; }
+.header-sub { font-size: 11px; color: #94a3b8; margin-top: 2px; }
+.status-bar { font-size: 11px; padding: 6px 16px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+.status-live { background: #f0fdf4; color: var(--green); }
+.status-static { background: #eff6ff; color: var(--navy); }
+.status-loading { background: var(--amber-bg); color: var(--amber); }
+.status-error { background: var(--red-bg); color: var(--red); }
+.btn-sm { font-size: 10px; padding: 2px 10px; border-radius: 4px; border: 1px solid currentColor; background: white; cursor: pointer; font-weight: 600; }
+
+/* FILTERS */
+.filters { background: var(--navy); padding: 10px 20px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.filter-group { display: flex; align-items: center; gap: 6px; }
+.filter-label { font-size: 11px; color: rgba(255,255,255,0.6); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+.filter-select { font-size: 12px; padding: 4px 8px; border-radius: 6px; border: none; background: rgba(255,255,255,0.15); color: white; cursor: pointer; font-weight: 600; }
+.filter-select option { color: #000; background: white; }
+
+/* TABS */
+.tabs { background: var(--navy2); padding: 0 20px; display: flex; gap: 2px; overflow-x: auto; }
+.tab { padding: 10px 16px; font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.5); border: none; background: none; cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; transition: all 0.15s; }
+.tab:hover { color: rgba(255,255,255,0.8); }
+.tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+
+/* CONTENT */
+.content { padding: 20px; }
+
+/* CARDS */
+.card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.card { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 1px 4px rgba(11,46,124,0.08); }
+.card-label { font-size: 10px; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+.card-value { font-size: 24px; font-weight: 800; color: var(--navy); line-height: 1; }
+.card-sub { font-size: 11px; color: var(--gray); margin-top: 4px; font-style: italic; }
+.card-value.green { color: var(--green); }
+.card-value.red { color: var(--red); }
+.card-value.amber { color: var(--amber); }
+
+/* ATTACH CARDS */
+.attach-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.attach-card { background: white; border-radius: 10px; padding: 14px; box-shadow: 0 1px 3px rgba(11,46,124,0.07); }
+.attach-label { font-size: 9px; font-weight: 700; color: var(--gray); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
+.attach-value { font-size: 28px; font-weight: 800; }
+.attach-target { font-size: 10px; color: var(--gray); margin-top: 2px; }
+
+/* PROGRESS BAR */
+.progress-wrap { height: 5px; background: #e5e7eb; border-radius: 3px; margin-top: 6px; }
+.progress-bar { height: 100%; border-radius: 3px; transition: width 0.5s; }
+
+/* SECTION HEADER */
+.section-header { background: var(--navy); color: white; padding: 10px 16px; font-size: 12px; font-weight: 700; border-radius: 8px 8px 0 0; margin-bottom: 0; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* TABLE */
+.table-wrap { background: white; border-radius: 0 0 10px 10px; box-shadow: 0 1px 4px rgba(11,46,124,0.08); margin-bottom: 16px; overflow: hidden; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th { background: var(--navy); color: white; padding: 10px 12px; text-align: right; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+th:first-child { text-align: left; }
+td { padding: 9px 12px; text-align: right; border-bottom: 1px solid var(--border); }
+td:first-child { text-align: left; font-weight: 600; }
+tr:last-child td { border-bottom: none; }
+tr:nth-child(even) td { background: #f9fafb; }
+.total-row td { background: var(--navy) !important; color: var(--gold); font-weight: 700; }
+
+/* CHART CONTAINER */
+.chart-wrap { background: white; border-radius: 10px; padding: 20px; box-shadow: 0 1px 4px rgba(11,46,124,0.08); margin-bottom: 16px; }
+.chart-title { font-size: 12px; font-weight: 700; color: var(--navy); margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.05em; }
+.chart-container { position: relative; height: 220px; }
+
+/* LOC SPLIT */
+.loc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.loc-card { background: white; border-radius: 12px; padding: 16px; box-shadow: 0 1px 4px rgba(11,46,124,0.08); }
+.loc-title { font-size: 14px; font-weight: 800; color: var(--navy); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid var(--border); }
+.loc-title.foscoe { border-bottom-color: #4F86C6; }
+.loc-title.mall { border-bottom-color: var(--gold); }
+.loc-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.loc-metric-label { font-size: 9px; font-weight: 700; color: var(--gray); text-transform: uppercase; }
+.loc-metric-val { font-size: 16px; font-weight: 800; color: var(--navy); }
+
+/* CONDITIONAL COLORS */
+.good { color: var(--green); }
+.warn { color: var(--amber); }
+.bad { color: var(--red); }
+.good-bg { background: var(--green-bg) !important; color: var(--green) !important; font-weight: 700 !important; }
+.bad-bg { background: var(--red-bg) !important; color: var(--red) !important; font-weight: 700 !important; }
+
+/* CONNECT SHEET PANEL */
+.connect-panel { background: #eff6ff; padding: 12px 16px; border-bottom: 1px solid #bfdbfe; font-size: 12px; display: none; }
+.connect-panel.show { display: block; }
+.connect-panel h4 { font-weight: 700; color: var(--navy); margin-bottom: 6px; }
+.connect-panel p { color: var(--gray); font-size: 11px; margin-bottom: 8px; line-height: 1.5; }
+.connect-row { display: flex; gap: 8px; }
+.connect-input { flex: 1; padding: 6px 10px; border: 1px solid #93c5fd; border-radius: 6px; font-size: 11px; font-family: monospace; }
+.btn-connect { padding: 6px 14px; background: var(--navy); color: white; border: none; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600; }
+
+@media (max-width: 600px) {
+  .loc-grid { grid-template-columns: 1fr; }
+  .card-value { font-size: 20px; }
+  .attach-value { font-size: 22px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <div class="header-title">Blackberry Creek Mattress</div>
+    <div class="header-sub">2026 Sales Dashboard</div>
+  </div>
+  <div id="last-updated" style="font-size:10px;color:#94a3b8;text-align:right"></div>
+</div>
+
+<div id="status-bar" class="status-bar status-static">
+  <span id="status-text">🔵 Static mode — Q1 2026 data · Connect Google Sheet to go live</span>
+  <div style="display:flex;gap:8px;align-items:center">
+    <button class="btn-sm" onclick="toggleConnect()" id="connect-btn">Connect Google Sheet</button>
+    <button class="btn-sm" id="refresh-btn" onclick="fetchLive()" style="display:none">Refresh now</button>
+  </div>
+</div>
+
+<div class="connect-panel" id="connect-panel">
+  <h4>Connect Google Sheets CSV</h4>
+  <p>1. Google Sheet → File → Share → Publish to web → Form Responses tab → CSV → Publish<br>2. Copy the URL and paste below</p>
+  <div class="connect-row">
+    <input class="connect-input" id="sheet-url-input" type="text" placeholder="https://docs.google.com/spreadsheets/d/e/..." value="https://docs.google.com/spreadsheets/d/e/2PACX-1vRgZDVtNKOlTPI-m_i96nNrhxgZFODbjMC1kbWnM7kmmG3m1U-FRUBFZMIqWCD1OORxVAr9BnbyqIvj/pub?gid=2120876281&single=true&output=csv"/>
+    <button class="btn-connect" onclick="connectSheet()">Connect</button>
+  </div>
+</div>
+
+
+
+<div class="filters">
+  <div class="filter-group">
+    <span class="filter-label">Month</span>
+    <select class="filter-select" id="f-month" onchange="render()">
+      <option value="All">All Months</option>
+      <option value="Jan">Jan</option><option value="Feb">Feb</option><option value="Mar">Mar</option>
+      <option value="Apr">Apr</option><option value="May">May</option><option value="Jun">Jun</option>
+      <option value="Jul">Jul</option><option value="Aug">Aug</option><option value="Sep">Sep</option>
+      <option value="Oct">Oct</option><option value="Nov">Nov</option><option value="Dec">Dec</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">Location</span>
+    <select class="filter-select" id="f-loc" onchange="render()">
+      <option value="All">Both Stores</option>
+      <option value="F">Foscoe</option>
+      <option value="M">Mall</option>
+    </select>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">Rep</span>
+    <select class="filter-select" id="f-rep" onchange="render()">
+      <option value="All">All Reps</option>
+      <option>Becca</option><option>Brandon</option><option>Patrick</option><option>Vance</option><option>Marc</option>
+    </select>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('overview',this)">Overview</button>
+  <button class="tab" onclick="showTab('reps',this)">By Rep</button>
+  <button class="tab" onclick="showTab('monthly',this)">Monthly</button>
+  <button class="tab" onclick="showTab('vendors',this)">Vendors</button>
+  <button class="tab" onclick="showTab('exchanges',this)">Exchanges</button>
+</div>
+
+<div class="content">
+  <!-- OVERVIEW TAB -->
+  <div id="tab-overview">
+    <div class="card-grid" id="kpi-cards"></div>
+    <div class="attach-grid" id="attach-cards"></div>
+    <div class="loc-grid" id="loc-cards"></div>
+    <div id="rep-summary-wrap"></div>
+    <div class="chart-wrap">
+      <div class="chart-title">Monthly Revenue — 2026 vs Goal</div>
+      <div class="chart-container"><canvas id="revenue-chart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- REPS TAB -->
+  <div id="tab-reps" style="display:none">
+    <div class="section-header">Salesperson Performance</div>
+    <div class="table-wrap"><table id="reps-table"></table></div>
+    <div class="chart-wrap">
+      <div class="chart-title">Revenue by Rep</div>
+      <div class="chart-container"><canvas id="rep-chart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- MONTHLY TAB -->
+  <div id="tab-monthly" style="display:none">
+    <div class="section-header">Revenue & Volume by Month</div>
+    <div class="table-wrap"><table id="monthly-table"></table></div>
+    <div style="height:16px"></div>
+    <div class="section-header">Attachment Rates by Month</div>
+    <div class="table-wrap"><table id="attach-table"></table></div>
+  </div>
+
+  <!-- VENDORS TAB -->
+  <div id="tab-vendors" style="display:none">
+    <div class="section-header">Vendor Mix — 2026</div>
+    <div class="table-wrap"><table id="vendor-table"></table></div>
+    <div class="chart-wrap" style="margin-top:16px">
+      <div class="chart-title">Vendor Revenue Share</div>
+      <div class="chart-container"><canvas id="vendor-chart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- EXCHANGES TAB -->
+  <div id="tab-exchanges" style="display:none">
+    <div class="section-header">Comfort Exchanges</div>
+    <div class="table-wrap"><table id="exchange-table"></table></div>
+  </div>
+</div>
+
+<script>
+// ── DATA ─────────────────────────────────────────────────────────────────────
+const RAW = [{"m":"Jan","r":"Marc","l":"M","s":1,"t":1569.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":70.0},{"m":"Jan","r":"Marc","l":"F","s":1,"t":119.0,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":119.0},{"m":"Jan","r":"Brandon","l":"F","s":1,"t":799.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"1","ac":0.0},{"m":"Jan","r":"Becca","l":"F","s":1,"t":11186.0,"mt":0,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":0.0},{"m":"Jan","r":"Marc","l":"M","s":1,"t":309.0,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":309.0},{"m":"Jan","r":"Becca","l":"F","s":1,"t":1728.0,"mt":1,"pr":0,"pi":1,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"R","ac":390.0},{"m":"Jan","r":"Becca","l":"F","s":1,"t":779.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"R","ac":50.0},{"m":"Jan","r":"Becca","l":"F","s":1,"t":1250.0,"mt":0,"pr":0,"pi":0,"sh":0,"b":1,"rv":0,"ms":1,"q":0,"ct":"2","ac":0.0},{"m":"Jan","r":"Patrick","l":"M","s":1,"t":3692.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"2","ac":180.0},{"m":"Jan","r":"Becca","l":"F","s":1,"t":900.0,"mt":0,"pr":0,"pi":0,"sh":0,"b":1,"rv":0,"ms":1,"q":0,"ct":"R","ac":0.0},{"m":"Jan","r":"Becca","l":"F","s":1,"t":3847.0,"mt":1,"pr":1,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":149.0},{"m":"Jan","r":"Becca","l":"F","s":1,"t":899.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"1","ac":0.0},{"m":"Jan","r":"Patrick","l":"M","s":1,"t":1097.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"1","ac":99.0},{"m":"Jan","r":"Becca","l":"F","s":1,"t":1044.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"C","ac":70.0},{"m":"Jan","r":"Vance","l":"F","s":1,"t":599.0,"mt":0,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":0.0},{"m":"Jan","r":"Vance","l":"F","s":0,"t":0.0,"mt":0,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":1,"ct":"1","ac":0.0},{"m":"Jan","r":"Becca","l":"F","s":1,"t":3317.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":1,"rv":0,"ms":1,"q":0,"ct":"R","ac":99.0},{"m":"Jan","r":"Becca","l":"F","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":1,"ct":"1","ac":0.0},{"m":"Jan","r":"Vance","l":"F","s":1,"t":129.0,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"2","ac":129.0},{"m":"Jan","r":"Patrick","l":"M","s":1,"t":2893.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":70.0},{"m":"Jan","r":"Patrick","l":"M","s":1,"t":3624.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"2","ac":0.0},{"m":"Jan","r":"Patrick","l":"M","s":1,"t":100.0,"mt":0,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"1","ac":0.0},{"m":"Jan","r":"Patrick","l":"M","s":1,"t":799.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"1","ac":0.0},{"m":"Jan","r":"Brandon","l":"F","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":1,"ct":"R","ac":0.0},{"m":"Jan","r":"Patrick","l":"M","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":0.0},{"m":"Jan","r":"Marc","l":"M","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":1,"ct":"2","ac":0.0},{"m":"Jan","r":"Becca","l":"F","s":1,"t":629.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"1","ac":100.0},{"m":"Jan","r":"Marc","l":"M","s":1,"t":1699.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":1,"ms":0,"q":0,"ct":"R","ac":0.0},{"m":"Jan","r":"Brandon","l":"F","s":1,"t":2958.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":1,"rv":0,"ms":1,"q":0,"ct":"R","ac":60.0},{"m":"Jan","r":"Marc","l":"M","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":1,"ct":"2","ac":0.0},{"m":"Jan","r":"Brandon","l":"F","s":1,"t":3469.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":70.0},{"m":"Jan","r":"Brandon","l":"F","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":1,"ct":"C","ac":0.0},{"m":"Jan","r":"Vance","l":"F","s":1,"t":1129.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":1,"ms":1,"q":0,"ct":"E","ac":0.0},{"m":"Jan","r":"Brandon","l":"F","s":1,"t":1099.0,"mt":0,"pr":0,"pi":0,"sh":0,"b":1,"rv":0,"ms":1,"q":0,"ct":"1","ac":0.0},{"m":"Jan","r":"Patrick","l":"M","s":1,"t":4675.0,"mt":1,"pr":1,"pi":0,"sh":1,"b":1,"rv":0,"ms":1,"q":0,"ct":"R","ac":378.0},{"m":"Jan","r":"Patrick","l":"M","s":1,"t":199.0,"mt":0,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":0.0},{"m":"Jan","r":"Patrick","l":"M","s":1,"t":499.0,"mt":0,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":0.0},{"m":"Jan","r":"Patrick","l":"M","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":1,"ct":"1","ac":0.0},{"m":"Jan","r":"Patrick","l":"M","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":0.0},{"m":"Jan","r":"Patrick","l":"M","s":1,"t":3017.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"C","ac":99.0},{"m":"Jan","r":"Becca","l":"F","s":1,"t":229.0,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":229.0},{"m":"Jan","r":"Patrick","l":"M","s":1,"t":148.0,"mt":0,"pr":0,"pi":1,"sh":1,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":148.0},{"m":"Jan","r":"Brandon","l":"F","s":1,"t":4042.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":1,"rv":0,"ms":1,"q":0,"ct":"C","ac":54.0},{"m":"Jan","r":"Marc","l":"F","s":1,"t":119.0,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":119.0},{"m":"Jan","r":"Becca","l":"F","s":1,"t":457.0,"mt":0,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"R","ac":0.0},{"m":"Jan","r":"Marc","l":"F","s":1,"t":269.0,"mt":0,"pr":0,"pi":0,"sh":1,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":269.0},{"m":"Jan","r":"Patrick","l":"M","s":1,"t":199.0,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"1","ac":199.0},{"m":"Jan","r":"Brandon","l":"F","s":1,"t":4673.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":1,"rv":0,"ms":1,"q":0,"ct":"C","ac":99.0},{"m":"Jan","r":"Becca","l":"F","s":1,"t":3032.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"2","ac":109.0},{"m":"Jan","r":"Brandon","l":"F","s":1,"t":1357.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":1,"ms":0,"q":0,"ct":"2","ac":59.0},{"m":"Jan","r":"Brandon","l":"F","s":1,"t":125.0,"mt":0,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"R","ac":0.0},{"m":"Jan","r":"Patrick","l":"M","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":1,"rv":0,"ms":1,"q":1,"ct":"1","ac":0.0},{"m":"Jan","r":"Marc","l":"M","s":1,"t":3077.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":109.0},{"m":"Jan","r":"Brandon","l":"F","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":1,"ct":"1","ac":0.0},{"m":"Jan","r":"Marc","l":"M","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":0.0},{"m":"Jan","r":"Patrick","l":"M","s":1,"t":2596.0,"mt":1,"pr":1,"pi":1,"sh":0,"b":1,"rv":0,"ms":1,"q":0,"ct":"C","ac":228.0},{"m":"Jan","r":"Marc","l":"M","s":1,"t":2199.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":100.0},{"m":"Jan","r":"Patrick","l":"M","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":1,"ct":"C","ac":0.0},{"m":"Jan","r":"Patrick","l":"M","s":1,"t":2109.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":59.0},{"m":"Jan","r":"Patrick","l":"M","s":1,"t":2991.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":1,"rv":0,"ms":1,"q":0,"ct":"1","ac":109.0},{"m":"Jan","r":"Marc","l":"F","s":1,"t":1498.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"2","ac":0.0},{"m":"Jan","r":"Patrick","l":"M","s":1,"t":900.0,"mt":0,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"2","ac":0.0},{"m":"Jan","r":"Patrick","l":"M","s":1,"t":1124.0,"mt":1,"pr":0,"pi":0,"sh":1,"b":1,"rv":0,"ms":1,"q":0,"ct":"C","ac":64.0},{"m":"Jan","r":"Patrick","l":"M","s":1,"t":349.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"1","ac":0.0},{"m":"Jan","r":"Becca","l":"F","s":1,"t":105.0,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":105.0},{"m":"Jan","r":"Marc","l":"F","s":1,"t":129.0,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"1","ac":129.0},{"m":"Jan","r":"Vance","l":"F","s":1,"t":1599.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":1,"rv":0,"ms":1,"q":0,"ct":"1","ac":0.0},{"m":"Jan","r":"Becca","l":"F","s":1,"t":4375.97,"mt":1,"pr":1,"pi":0,"sh":0,"b":1,"rv":0,"ms":1,"q":0,"ct":"2","ac":160.0},{"m":"Jan","r":"Becca","l":"F","s":1,"t":995.0,"mt":0,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"R","ac":0.0},{"m":"Jan","r":"Becca","l":"F","s":1,"t":2354.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"E","ac":0.0},{"m":"Jan","r":"Patrick","l":"M","s":1,"t":229.0,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":229.0},{"m":"Jan","r":"Patrick","l":"M","s":1,"t":597.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"R","ac":0.0},{"m":"Jan","r":"Patrick","l":"M","s":1,"t":55.0,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":55.0},{"m":"Jan","r":"Patrick","l":"M","s":1,"t":3469.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":1,"ms":1,"q":0,"ct":"1","ac":70.0},{"m":"Jan","r":"Marc","l":"F","s":1,"t":294.0,"mt":0,"pr":0,"pi":0,"sh":1,"b":0,"rv":0,"ms":0,"q":0,"ct":"1","ac":294.0},{"m":"Jan","r":"Becca","l":"F","s":1,"t":459.0,"mt":0,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"C","ac":0.0},{"m":"Jan","r":"Becca","l":"F","s":1,"t":1897.98,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":99.98},{"m":"Jan","r":"Vance","l":"F","s":1,"t":2599.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"R","ac":0.0},{"m":"Jan","r":"Vance","l":"F","s":1,"t":400.0,"mt":0,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"1","ac":0.0},{"m":"Jan","r":"Vance","l":"F","s":1,"t":2561.99,"mt":1,"pr":1,"pi":0,"sh":0,"b":1,"rv":0,"ms":1,"q":0,"ct":"1","ac":62.99},{"m":"Feb","r":"Patrick","l":"M","s":1,"t":2076.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":1,"rv":0,"ms":1,"q":0,"ct":"1","ac":99.0},{"m":"Feb","r":"Vance","l":"F","s":1,"t":2898.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":1,"rv":0,"ms":1,"q":0,"ct":"1","ac":0.0},{"m":"Feb","r":"Becca","l":"F","s":1,"t":75.0,"mt":0,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":0.0},{"m":"Feb","r":"Patrick","l":"M","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":1,"ct":"1","ac":0.0},{"m":"Feb","r":"Marc","l":"F","s":1,"t":119.0,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"1","ac":119.0},{"m":"Feb","r":"Becca","l":"F","s":1,"t":3896.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":99.0},{"m":"Feb","r":"Patrick","l":"M","s":1,"t":5037.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":1,"rv":0,"ms":1,"q":0,"ct":"R","ac":140.0},{"m":"Feb","r":"Patrick","l":"M","s":1,"t":278.0,"mt":0,"pr":1,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":278.0},{"m":"Feb","r":"Patrick","l":"M","s":1,"t":4307.0,"mt":1,"pr":1,"pi":1,"sh":0,"b":0,"rv":1,"ms":1,"q":0,"ct":"R","ac":309.0},{"m":"Feb","r":"Vance","l":"F","s":1,"t":74.0,"mt":0,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":74.0},{"m":"Feb","r":"Becca","l":"F","s":1,"t":299.0,"mt":0,"pr":0,"pi":0,"sh":1,"b":0,"rv":1,"ms":1,"q":0,"ct":"R","ac":299.0},{"m":"Feb","r":"Patrick","l":"M","s":1,"t":478.0,"mt":0,"pr":0,"pi":0,"sh":1,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":478.0},{"m":"Feb","r":"Vance","l":"F","s":1,"t":200.0,"mt":0,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"R","ac":0.0},{"m":"Feb","r":"Becca","l":"F","s":1,"t":2011.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"R","ac":180.0},{"m":"Feb","r":"Vance","l":"F","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":1,"ct":"1","ac":0.0},{"m":"Feb","r":"Becca","l":"F","s":0,"t":0.0,"mt":0,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":1,"ct":"R","ac":0.0},{"m":"Feb","r":"Patrick","l":"M","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":1,"ct":"R","ac":0.0},{"m":"Feb","r":"Vance","l":"F","s":1,"t":3548.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":1,"rv":0,"ms":1,"q":0,"ct":"C","ac":99.0},{"m":"Feb","r":"Becca","l":"F","s":1,"t":998.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"R","ac":0.0},{"m":"Feb","r":"Brandon","l":"F","s":1,"t":160.0,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":1,"ms":1,"q":0,"ct":"1","ac":160.0},{"m":"Feb","r":"Patrick","l":"M","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":1,"ct":"1","ac":0.0},{"m":"Feb","r":"Patrick","l":"M","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"1","ac":0.0},{"m":"Feb","r":"Brandon","l":"F","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":1,"ct":"R","ac":0.0},{"m":"Feb","r":"Brandon","l":"F","s":1,"t":350.0,"mt":0,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"1","ac":0.0},{"m":"Feb","r":"Patrick","l":"M","s":1,"t":2827.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":1,"rv":0,"ms":1,"q":0,"ct":"1","ac":99.0},{"m":"Feb","r":"Patrick","l":"M","s":1,"t":4165.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":1,"rv":0,"ms":1,"q":0,"ct":"1","ac":99.0},{"m":"Feb","r":"Vance","l":"F","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":0.0},{"m":"Feb","r":"Vance","l":"F","s":1,"t":577.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"R","ac":79.98},{"m":"Feb","r":"Becca","l":"F","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":1,"ct":"C","ac":0.0},{"m":"Feb","r":"Vance","l":"F","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":1,"ct":"R","ac":0.0},{"m":"Feb","r":"Patrick","l":"M","s":1,"t":3815.0,"mt":1,"pr":1,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"C","ac":417.0},{"m":"Feb","r":"Patrick","l":"M","s":1,"t":1997.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":1,"rv":0,"ms":1,"q":0,"ct":"C","ac":99.0},{"m":"Feb","r":"Patrick","l":"M","s":1,"t":99.0,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"C","ac":99.0},{"m":"Feb","r":"Patrick","l":"M","s":1,"t":349.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":1,"ms":1,"q":0,"ct":"1","ac":0.0},{"m":"Feb","r":"Patrick","l":"M","s":1,"t":199.0,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":199.0},{"m":"Feb","r":"Becca","l":"F","s":1,"t":3816.0,"mt":1,"pr":1,"pi":0,"sh":1,"b":1,"rv":0,"ms":1,"q":0,"ct":"C","ac":368.0},{"m":"Feb","r":"Becca","l":"F","s":1,"t":2286.0,"mt":1,"pr":1,"pi":1,"sh":0,"b":1,"rv":0,"ms":1,"q":0,"ct":"R","ac":368.0},{"m":"Feb","r":"Patrick","l":"M","s":1,"t":1707.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":99.0},{"m":"Feb","r":"Vance","l":"F","s":1,"t":2298.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":0.0},{"m":"Feb","r":"Patrick","l":"M","s":1,"t":1299.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":1,"rv":0,"ms":1,"q":0,"ct":"R","ac":0.0},{"m":"Feb","r":"Patrick","l":"M","s":1,"t":199.0,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":199.0},{"m":"Feb","r":"Patrick","l":"M","s":1,"t":1898.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":0.0},{"m":"Feb","r":"Becca","l":"F","s":1,"t":2043.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"R","ac":70.0},{"m":"Feb","r":"Patrick","l":"M","s":1,"t":149.0,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":149.0},{"m":"Feb","r":"Vance","l":"F","s":1,"t":12940.5,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"2","ac":344.0},{"m":"Feb","r":"Patrick","l":"M","s":1,"t":24.0,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":24.0},{"m":"Feb","r":"Vance","l":"F","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":0.0},{"m":"Feb","r":"Becca","l":"F","s":1,"t":1773.0,"mt":1,"pr":1,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":175.0},{"m":"Feb","r":"Vance","l":"F","s":1,"t":5940.0,"mt":1,"pr":1,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"C","ac":398.0},{"m":"Feb","r":"Patrick","l":"M","s":1,"t":3868.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":70.0},{"m":"Feb","r":"Patrick","l":"M","s":1,"t":249.0,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":249.0},{"m":"Feb","r":"Patrick","l":"M","s":1,"t":2397.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":1,"ms":1,"q":0,"ct":"C","ac":99.0},{"m":"Feb","r":"Patrick","l":"M","s":1,"t":3907.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":1,"rv":0,"ms":1,"q":0,"ct":"1","ac":109.0},{"m":"Feb","r":"Patrick","l":"M","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":0.0},{"m":"Feb","r":"Vance","l":"F","s":1,"t":1041.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"E","ac":0.0},{"m":"Feb","r":"Brandon","l":"F","s":1,"t":999.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"R","ac":0.0},{"m":"Feb","r":"Brandon","l":"F","s":1,"t":4078.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":1,"rv":0,"ms":1,"q":0,"ct":"R","ac":0.0},{"m":"Feb","r":"Brandon","l":"F","s":1,"t":3558.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":1,"rv":0,"ms":1,"q":0,"ct":"1","ac":60.0},{"m":"Feb","r":"Brandon","l":"F","s":1,"t":626.0,"mt":1,"pr":0,"pi":1,"sh":1,"b":0,"rv":0,"ms":0,"q":0,"ct":"R","ac":177.0},{"m":"Feb","r":"Brandon","l":"F","s":1,"t":3425.0,"mt":1,"pr":1,"pi":1,"sh":1,"b":1,"rv":0,"ms":1,"q":0,"ct":"1","ac":428.0},{"m":"Feb","r":"Patrick","l":"M","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":1,"ct":"2","ac":0.0},{"m":"Feb","r":"Patrick","l":"M","s":1,"t":2899.0,"mt":0,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":0.0},{"m":"Feb","r":"Patrick","l":"M","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":1,"ct":"R","ac":0.0},{"m":"Feb","r":"Patrick","l":"M","s":1,"t":1199.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":0.0},{"m":"Mar","r":"Becca","l":"F","s":1,"t":4932.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":109.0},{"m":"Mar","r":"Patrick","l":"M","s":1,"t":1928.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":0.0},{"m":"Mar","r":"Patrick","l":"M","s":1,"t":127.2,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":127.0},{"m":"Mar","r":"Marc","l":"F","s":1,"t":234.0,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":234.0},{"m":"Mar","r":"Becca","l":"F","s":1,"t":3499.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"2","ac":109.0},{"m":"Mar","r":"Patrick","l":"M","s":1,"t":678.0,"mt":1,"pr":0,"pi":1,"sh":1,"b":0,"rv":0,"ms":1,"q":0,"ct":"E","ac":100.0},{"m":"Mar","r":"Vance","l":"F","s":1,"t":35.0,"mt":0,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"1","ac":0.0},{"m":"Mar","r":"Becca","l":"F","s":1,"t":218.0,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"R","ac":218.0},{"m":"Mar","r":"Becca","l":"F","s":1,"t":3776.0,"mt":0,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"R","ac":0.0},{"m":"Mar","r":"Patrick","l":"M","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"2","ac":0.0},{"m":"Mar","r":"Patrick","l":"M","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":1,"ct":"1","ac":0.0},{"m":"Mar","r":"Patrick","l":"M","s":1,"t":797.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"2","ac":0.0},{"m":"Mar","r":"Patrick","l":"M","s":1,"t":39.0,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":39.0},{"m":"Mar","r":"Brandon","l":"F","s":1,"t":1508.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":1,"ms":0,"q":0,"ct":"1","ac":60.0},{"m":"Mar","r":"Patrick","l":"M","s":1,"t":133.0,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":133.0},{"m":"Mar","r":"Brandon","l":"F","s":1,"t":2348.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":1,"rv":1,"ms":1,"q":0,"ct":"1","ac":0.0},{"m":"Mar","r":"Brandon","l":"F","s":1,"t":3399.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":0.0},{"m":"Mar","r":"Marc","l":"M","s":1,"t":3094.0,"mt":1,"pr":1,"pi":1,"sh":0,"b":0,"rv":1,"ms":1,"q":0,"ct":"1","ac":99.0},{"m":"Mar","r":"Marc","l":"M","s":1,"t":3680.0,"mt":1,"pr":1,"pi":1,"sh":0,"b":1,"rv":1,"ms":1,"q":0,"ct":"C","ac":90.0},{"m":"Mar","r":"Becca","l":"F","s":1,"t":3735.0,"mt":0,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"C","ac":0.0},{"m":"Mar","r":"Marc","l":"M","s":1,"t":3694.0,"mt":1,"pr":1,"pi":0,"sh":1,"b":1,"rv":1,"ms":1,"q":0,"ct":"1","ac":99.0},{"m":"Mar","r":"Patrick","l":"M","s":1,"t":2107.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"C","ac":109.0},{"m":"Mar","r":"Marc","l":"M","s":1,"t":138.0,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"1","ac":138.0},{"m":"Mar","r":"Becca","l":"F","s":1,"t":125.0,"mt":0,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":0.0},{"m":"Mar","r":"Patrick","l":"M","s":1,"t":199.0,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":199.0},{"m":"Mar","r":"Becca","l":"F","s":1,"t":399.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"R","ac":0.0},{"m":"Mar","r":"Brandon","l":"F","s":1,"t":199.0,"mt":0,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":0.0},{"m":"Mar","r":"Brandon","l":"F","s":1,"t":300.0,"mt":0,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"1","ac":0.0},{"m":"Mar","r":"Brandon","l":"F","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":1,"ct":"1","ac":0.0},{"m":"Mar","r":"Brandon","l":"F","s":1,"t":1247.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"2","ac":0.0},{"m":"Mar","r":"Brandon","l":"F","s":1,"t":3908.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":109.0},{"m":"Mar","r":"Patrick","l":"M","s":1,"t":2227.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":229.0},{"m":"Mar","r":"Brandon","l":"F","s":1,"t":119.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":1,"ms":0,"q":0,"ct":"R","ac":40.0},{"m":"Mar","r":"Becca","l":"F","s":1,"t":3694.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":70.0},{"m":"Mar","r":"Vance","l":"F","s":1,"t":1127.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"2","ac":0.0},{"m":"Mar","r":"Patrick","l":"M","s":1,"t":2107.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":109.0},{"m":"Mar","r":"Patrick","l":"M","s":1,"t":1499.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"2","ac":0.0},{"m":"Mar","r":"Patrick","l":"M","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":1,"ct":"1","ac":0.0},{"m":"Mar","r":"Patrick","l":"M","s":1,"t":858.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":0.0},{"m":"Mar","r":"Marc","l":"M","s":1,"t":60.0,"mt":0,"pr":1,"pi":0,"sh":0,"b":0,"rv":1,"ms":0,"q":0,"ct":"1","ac":60.0},{"m":"Mar","r":"Becca","l":"F","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":1,"ct":"R","ac":0.0},{"m":"Mar","r":"Vance","l":"F","s":1,"t":99.0,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":99.0},{"m":"Mar","r":"Patrick","l":"M","s":1,"t":1338.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":40.0},{"m":"Mar","r":"Vance","l":"F","s":1,"t":1075.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":1,"ms":1,"q":0,"ct":"1","ac":0.0},{"m":"Mar","r":"Becca","l":"F","s":1,"t":2907.0,"mt":1,"pr":1,"pi":1,"sh":0,"b":1,"rv":0,"ms":1,"q":0,"ct":"1","ac":208.0},{"m":"Mar","r":"Becca","l":"F","s":1,"t":4847.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"R","ac":0.0},{"m":"Mar","r":"Brandon","l":"F","s":1,"t":1398.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"2","ac":99.0},{"m":"Mar","r":"Vance","l":"M","s":1,"t":0.0,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":1,"ms":1,"q":0,"ct":"C","ac":0.0},{"m":"Mar","r":"Becca","l":"F","s":1,"t":2566.0,"mt":1,"pr":1,"pi":1,"sh":0,"b":1,"rv":0,"ms":1,"q":0,"ct":"1","ac":208.0},{"m":"Mar","r":"Brandon","l":"F","s":1,"t":2597.0,"mt":1,"pr":1,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"2","ac":298.0},{"m":"Mar","r":"Brandon","l":"F","s":1,"t":3899.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"2","ac":100.0},{"m":"Mar","r":"Brandon","l":"F","s":1,"t":1306.0,"mt":1,"pr":1,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":208.0},{"m":"Mar","r":"Becca","l":"F","s":1,"t":1078.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"R","ac":0.0},{"m":"Mar","r":"Patrick","l":"M","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":0.0},{"m":"Mar","r":"Patrick","l":"M","s":1,"t":40.0,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":40.0},{"m":"Mar","r":"Patrick","l":"M","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":1,"ct":"C","ac":0.0},{"m":"Mar","r":"Patrick","l":"M","s":1,"t":129.0,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":129.0},{"m":"Mar","r":"Vance","l":"F","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":1,"ct":"R","ac":0.0},{"m":"Mar","r":"Patrick","l":"M","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":0.0},{"m":"Mar","r":"Patrick","l":"M","s":1,"t":2697.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"R","ac":99.0},{"m":"Mar","r":"Becca","l":"F","s":1,"t":1300.0,"mt":0,"pr":0,"pi":0,"sh":0,"b":1,"rv":0,"ms":1,"q":0,"ct":"R","ac":0.0},{"m":"Mar","r":"Becca","l":"F","s":1,"t":598.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"1","ac":0.0},{"m":"Mar","r":"Patrick","l":"M","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":1,"ct":"C","ac":0.0},{"m":"Mar","r":"Becca","l":"F","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":0.0},{"m":"Mar","r":"Brandon","l":"F","s":1,"t":2145.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":0,"q":0,"ct":"2","ac":0.0},{"m":"Mar","r":"Becca","l":"F","s":1,"t":1098.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"C","ac":0.0},{"m":"Mar","r":"Brandon","l":"F","s":1,"t":2145.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"2","ac":0.0},{"m":"Mar","r":"Patrick","l":"M","s":1,"t":498.0,"mt":0,"pr":0,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"2","ac":498.0},{"m":"Mar","r":"Patrick","l":"M","s":1,"t":349.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":0.0},{"m":"Mar","r":"Patrick","l":"M","s":1,"t":3463.0,"mt":1,"pr":1,"pi":1,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":368.0},{"m":"Mar","r":"Brandon","l":"F","s":0,"t":0.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":0.0},{"m":"Mar","r":"Brandon","l":"F","s":1,"t":3598.0,"mt":1,"pr":1,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":0.0},{"m":"Mar","r":"Marc","l":"M","s":1,"t":2398.0,"mt":1,"pr":0,"pi":0,"sh":0,"b":0,"rv":0,"ms":1,"q":0,"ct":"1","ac":0.0}]
+
+const GOALS = {
+  monthly: { Jan:110000,Feb:120000,Mar:150000,Apr:140000,May:240000,Jun:210000,Jul:230000,Aug:240000,Sep:190000,Oct:170000,Nov:175000,Dec:125000 },
+  reps: {
+    Becca:{annual:572000}, Brandon:{annual:339000}, Patrick:{annual:587000}, Vance:{annual:290000}, Marc:{annual:311000}
+  }
+};
+const Y25_MONTHLY = { Jan:107915,Feb:121648,Mar:111518,Apr:0,May:0,Jun:0,Jul:0,Aug:0,Sep:0,Oct:0,Nov:0,Dec:0 };
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const REPS = ['Becca','Brandon','Patrick','Vance','Marc'];
+const SHEETS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRgZDVtNKOlTPI-m_i96nNrhxgZFODbjMC1kbWnM7kmmG3m1U-FRUBFZMIqWCD1OORxVAr9BnbyqIvj/pub?gid=2120876281&single=true&output=csv";
+// Netlify serverless proxy (primary) + public fallbacks
+const CORS_PROXIES = [
+  url => `/api/proxy?url=${encodeURIComponent(url)}`,
+  url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
+];
+
+let liveData = null;
+let charts = {};
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const money = n => !n || isNaN(n) ? '$0' : '$' + Math.round(n).toLocaleString();
+const pct = (n, d=1) => !isFinite(n) || isNaN(n) ? '—' : (n*100).toFixed(d) + '%';
+const colorPct = (val, target) => {
+  if (!target) return '';
+  const r = val / target;
+  return r >= 1 ? 'good' : r >= 0.75 ? 'warn' : 'bad';
+};
+const colorDiff = v => v > 0 ? 'good' : v < 0 ? 'bad' : '';
+
+// ── CALC ENGINE ──────────────────────────────────────────────────────────────
+function calc(rows) {
+  const ups = rows.length;
+  const sales = rows.filter(r => r.s);
+  const n = sales.length;
+  if (!n) return {ups,n,nm:0,revenue:0,cr:0,at:0,pi:0,pr:0,ba:0,sh:0,css:0,reviews:0,quotes:rows.filter(r=>r.q).length,accDollars:0,exchanges:0};
+  const rev = sales.reduce((s,r) => s + r.t, 0);
+  const mattSales = sales.filter(r => r.mt), nm = mattSales.length;
+  const masterMatt = mattSales.filter(r => r.ms), nmm = masterMatt.length;
+  return {
+    ups, n, nm, revenue: rev,
+    cr: n/ups, at: rev/n,
+    pi: nm ? mattSales.filter(r=>r.pi).length/nm : 0,
+    pr: nm ? mattSales.filter(r=>r.pr).length/nm : 0,
+    ba: nmm ? masterMatt.filter(r=>r.b).length/nmm : 0,
+    sh: nm ? mattSales.filter(r=>r.sh).length/nm : 0,
+    css: nm ? mattSales.filter(r=>r.pr&&r.pi&&r.sh).length/nm : 0,
+    reviews: rows.filter(r=>r.rv).length,
+    quotes: rows.filter(r=>r.q).length,
+    accDollars: sales.reduce((s,r) => s + (r.ac||0), 0),
+    exchanges: rows.filter(r=>r.ct==='E').length
+  };
+}
+
+// ── FILTERS ──────────────────────────────────────────────────────────────────
+function getFiltered() {
+  const raw = liveData || RAW;
+  const fm = $('f-month').value, fl = $('f-loc').value, fr = $('f-rep').value;
+  return raw.filter(r =>
+    (fm === 'All' || r.m === fm) &&
+    (fl === 'All' || r.l === fl) &&
+    (fr === 'All' || r.r === fr)
+  );
+}
+
+// ── RENDER ───────────────────────────────────────────────────────────────────
+
+function renderRepSummary(rows) {
+  const wrap = $('rep-summary-wrap');
+  if (!wrap) return;
+  const repCards = REPS.map(rep => {
+    const m = calc(rows.filter(r=>r.r===rep));
+    if (!m.n) return '';
+    const pillCls = colorPct(m.pi, 0.45);
+    const protCls = colorPct(m.pr, 0.75);
+    const crCls   = colorPct(m.cr, 0.81);
+    return `
+    <div class="card" style="min-width:140px;flex:1">
+      <div class="card-label" style="font-size:12px;font-weight:800;color:var(--navy);text-transform:none;letter-spacing:0;margin-bottom:8px">${rep}</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:11px">
+        <div><span style="color:var(--gray)">Sales</span><br><strong>${m.n}</strong></div>
+        <div><span style="color:var(--gray)">Revenue</span><br><strong>${money(m.revenue)}</strong></div>
+        <div><span style="color:var(--gray)">Close%</span><br><strong class="${crCls}">${pct(m.cr,0)}</strong></div>
+        <div><span style="color:var(--gray)">Avg $</span><br><strong>${money(m.at)}</strong></div>
+        <div><span style="color:var(--gray)">Pillow%</span><br><strong class="${pillCls}">${pct(m.pi)}</strong></div>
+        <div><span style="color:var(--gray)">Prot%</span><br><strong class="${protCls}">${pct(m.pr)}</strong></div>
+      </div>
+    </div>`;
+  }).filter(Boolean).join('');
+  wrap.innerHTML = repCards ? `
+    <div style="margin-bottom:6px;font-size:10px;font-weight:700;color:var(--navy);text-transform:uppercase;letter-spacing:0.05em">Rep Snapshot</div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px">${repCards}</div>` : '';
+}
+
+function render() {
+  const rows = getFiltered();
+  const m = calc(rows);
+  const fm = $('f-month').value;
+  const mGoal = fm !== 'All' ? (GOALS.monthly[fm]||0) : Object.values(GOALS.monthly).reduce((a,b)=>a+b,0);
+  const goalDiff = m.revenue - mGoal;
+
+  renderKPIs(m, mGoal, goalDiff);
+  renderAttach(m);
+  renderLoc(rows);
+  renderRevenueChart(rows);
+  renderRepSummary(rows);
+
+  const tab = document.querySelector('.tab.active')?.dataset?.tab || 'overview';
+  if (tab === 'reps' || $('tab-reps').style.display !== 'none') renderReps(rows);
+  if (tab === 'monthly' || $('tab-monthly').style.display !== 'none') renderMonthly();
+  if (tab === 'vendors' || $('tab-vendors').style.display !== 'none') renderVendors(rows);
+  if (tab === 'exchanges' || $('tab-exchanges').style.display !== 'none') renderExchanges(rows);
+}
+
+function renderKPIs(m, mGoal, goalDiff) {
+  const comp25 = Object.values(Y25_MONTHLY).reduce((a,b)=>a+b,0);
+  const kpis = [
+    {label:'Total Revenue', value:money(m.revenue), sub:`${m.n} sales closed`},
+    {label:'vs Goal', value:(goalDiff>=0?'+':'')+money(goalDiff), sub:`Goal: ${money(mGoal)}`, cls:colorDiff(goalDiff)},
+    {label:'Avg Ticket', value:money(m.at), sub:`${m.n} mattress sales`},
+    {label:'Close Rate', value:pct(m.cr,0), sub:'Target: 81%', cls:colorPct(m.cr,0.81)},
+    {label:'Accessory $', value:money(m.accDollars), sub:pct(m.accDollars/Math.max(m.revenue,1))+' of revenue'},
+    {label:'Reviews', value:m.reviews, sub:`${m.quotes} quotes out`},
+  ];
+  $('kpi-cards').innerHTML = kpis.map(k=>`
+    <div class="card">
+      <div class="card-label">${k.label}</div>
+      <div class="card-value ${k.cls||''}">${k.value}</div>
+      <div class="card-sub">${k.sub}</div>
+    </div>`).join('');
+}
+
+function renderAttach(m) {
+  const attaches = [
+    {label:'Pillow', val:m.pi, target:0.45, note:'Target 45% · Q2'},
+    {label:'Protector (paid)', val:m.pr, target:0.75, note:'Target 75%'},
+    {label:'Base', val:m.ba, target:0.40, note:'Target 40% · master'},
+    {label:'Sheets', val:m.sh, target:0.20, note:'Target 20%'},
+    {label:'Complete Sleep System', val:m.css, target:0.30, note:'Prot+Pillow+Sheets · 30%'},
+  ];
+  $('attach-cards').innerHTML = attaches.map(a => {
+    const ratio = a.target ? a.val/a.target : 0;
+    const cls = ratio >= 1 ? 'good' : ratio >= 0.75 ? 'warn' : 'bad';
+    const barColor = ratio >= 1 ? '#16a34a' : ratio >= 0.75 ? '#d97706' : '#dc2626';
+    const barW = Math.min(100, ratio*100).toFixed(0);
+    return `
+    <div class="attach-card">
+      <div class="attach-label">${a.label}</div>
+      <div class="attach-value ${cls}">${pct(a.val)}</div>
+      <div class="attach-target">${a.note}</div>
+      <div class="progress-wrap"><div class="progress-bar" style="width:${barW}%;background:${barColor}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+function renderLoc(rows) {
+  const locs = [{key:'F',name:'📍 Foscoe',cls:'foscoe'},{key:'M',name:'📍 Mall',cls:'mall'}];
+  $('loc-cards').innerHTML = locs.map(loc => {
+    const m = calc(rows.filter(r=>r.l===loc.key));
+    return `
+    <div class="loc-card">
+      <div class="loc-title ${loc.cls}">${loc.name}</div>
+      <div class="loc-metrics">
+        <div><div class="loc-metric-label">Revenue</div><div class="loc-metric-val">${money(m.revenue)}</div></div>
+        <div><div class="loc-metric-label">Sales</div><div class="loc-metric-val">${m.n}</div></div>
+        <div><div class="loc-metric-label">Close %</div><div class="loc-metric-val">${pct(m.cr,0)}</div></div>
+        <div><div class="loc-metric-label">Avg Ticket</div><div class="loc-metric-val">${money(m.at)}</div></div>
+        <div><div class="loc-metric-label">Pillow %</div><div class="loc-metric-val ${colorPct(m.pi,0.45)}">${pct(m.pi)}</div></div>
+        <div><div class="loc-metric-label">Protector %</div><div class="loc-metric-val ${colorPct(m.pr,0.75)}">${pct(m.pr)}</div></div>
+        <div><div class="loc-metric-label">Base %</div><div class="loc-metric-val ${colorPct(m.ba,0.40)}">${pct(m.ba)}</div></div>
+        <div><div class="loc-metric-label">Reviews</div><div class="loc-metric-val">${m.reviews}</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderRevenueChart(rows) {
+  const raw = liveData || RAW;
+  const labels = [], actuals = [], goals = [];
+  MONTHS.forEach(mo => {
+    const rev = raw.filter(r=>r.m===mo&&r.s).reduce((s,r)=>s+r.t,0);
+    if (rev > 0 || GOALS.monthly[mo]) {
+      labels.push(mo);
+      actuals.push(Math.round(rev));
+      goals.push(GOALS.monthly[mo]||0);
+    }
+  });
+  destroyChart('revenue-chart');
+  charts['revenue-chart'] = new Chart($('revenue-chart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {label:'2026 Actual',data:actuals,backgroundColor:'#0B2E7C',borderRadius:4},
+        {label:'Goal',data:goals,backgroundColor:'rgba(235,146,34,0.3)',borderColor:'#EB9222',borderWidth:1.5,type:'line',pointRadius:3,tension:0.3},
+      ]
+    },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{labels:{font:{size:11}}}},
+      scales:{y:{ticks:{callback:v=>'$'+Math.round(v/1000)+'k',font:{size:10}},grid:{color:'#f3f4f6'}},x:{grid:{display:false},ticks:{font:{size:10}}}} }
+  });
+}
+
+function renderReps(rows) {
+  const thead = `<thead><tr>
+    <th style="text-align:left">Rep</th><th>Sales</th><th>Revenue</th><th>Close%</th>
+    <th>Avg $</th><th>Pillow%</th><th>Prot%</th><th>Base%</th><th>CSS%</th><th>Reviews</th><th>Annual Goal</th>
+  </tr></thead>`;
+  const repRows = REPS.map(rep => {
+    const m = calc(rows.filter(r=>r.r===rep));
+    const g = GOALS.reps[rep]?.annual || 0;
+    const diff = m.revenue - g;
+    const diffCls = diff >= 0 ? 'good-bg' : '';
+    return `<tr>
+      <td>${rep}</td><td>${m.n}</td><td>${money(m.revenue)}</td>
+      <td class="${colorPct(m.cr,0.81)}">${pct(m.cr)}</td>
+      <td>${money(m.at)}</td>
+      <td class="${colorPct(m.pi,0.45)}">${pct(m.pi)}</td>
+      <td class="${colorPct(m.pr,0.75)}">${pct(m.pr)}</td>
+      <td class="${colorPct(m.ba,0.40)}">${pct(m.ba)}</td>
+      <td class="${colorPct(m.css,0.30)}">${pct(m.css)}</td>
+      <td>${m.reviews}</td>
+      <td class="${diffCls}">${money(g)}</td>
+    </tr>`;
+  });
+  const totals = calc(rows);
+  repRows.push(`<tr class="total-row">
+    <td>TOTAL</td><td>${totals.n}</td><td>${money(totals.revenue)}</td>
+    <td>${pct(totals.cr)}</td><td>${money(totals.at)}</td>
+    <td>${pct(totals.pi)}</td><td>${pct(totals.pr)}</td><td>${pct(totals.ba)}</td>
+    <td>${pct(totals.css)}</td><td>${totals.reviews}</td><td>${money(Object.values(GOALS.reps).reduce((s,r)=>s+r.annual,0))}</td>
+  </tr>`);
+  $('reps-table').innerHTML = thead + '<tbody>' + repRows.join('') + '</tbody>';
+  // Rep chart
+  destroyChart('rep-chart');
+  charts['rep-chart'] = new Chart($('rep-chart'), {
+    type: 'bar',
+    data: {
+      labels: REPS,
+      datasets: [{
+        label:'Revenue',
+        data: REPS.map(r => Math.round(calc(rows.filter(d=>d.r===r)).revenue)),
+        backgroundColor: ['#0B2E7C','#1E3A8A','#2D4B9A','#3D5BAA','#4D6BBA'],
+        borderRadius: 4
+      }]
+    },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}},
+      scales:{y:{ticks:{callback:v=>'$'+Math.round(v/1000)+'k',font:{size:10}}},x:{grid:{display:false}}} }
+  });
+}
+
+function renderMonthly() {
+  const raw = liveData || RAW;
+  // Revenue table
+  const rhead = `<thead><tr>
+    <th style="text-align:left">Month</th><th>Revenue</th><th>Goal</th><th>vs Goal</th><th>vs Goal%</th>
+    <th>Sales</th><th>Ups</th><th>Close%</th><th>Avg Ticket</th><th>2025</th><th>YoY</th>
+  </tr></thead>`;
+  const rrows = MONTHS.map(mo => {
+    const moRows = raw.filter(r=>r.m===mo);
+    const m = calc(moRows);
+    const goal = GOALS.monthly[mo]||0;
+    const diff = m.revenue - goal;
+    const y25 = Y25_MONTHLY[mo]||0;
+    const yoy = m.revenue - y25;
+    if (!m.revenue && !goal) return '';
+    return `<tr>
+      <td>${mo}</td><td>${money(m.revenue)}</td><td style="color:var(--gray)">${money(goal)}</td>
+      <td class="${diff>=0?'good-bg':'bad-bg'}">${diff>=0?'+':''}${money(diff)}</td>
+      <td class="${diff>=0?'good':'bad'}">${goal?pct(diff/goal):'—'}</td>
+      <td>${m.n}</td><td>${m.ups}</td><td class="${colorPct(m.cr,0.81)}">${pct(m.cr)}</td>
+      <td>${money(m.at)}</td><td style="color:var(--gray)">${y25?money(y25):'—'}</td>
+      <td class="${yoy>=0?'good':'bad'}">${y25?(yoy>=0?'+':'')+money(yoy):'—'}</td>
+    </tr>`;
+  }).filter(Boolean);
+  $('monthly-table').innerHTML = rhead + '<tbody>' + rrows.join('') + '</tbody>';
+
+  // Attach table
+  const ahead = `<thead><tr>
+    <th style="text-align:left">Month</th><th>Matt Sales</th><th>Pillow%</th><th>Prot%</th><th>Base%</th><th>Sheets%</th><th>CSS%</th><th>Reviews</th>
+  </tr></thead>`;
+  const arows = MONTHS.map(mo => {
+    const moRows = raw.filter(r=>r.m===mo);
+    const m = calc(moRows);
+    if (!m.nm) return '';
+    return `<tr>
+      <td>${mo}</td><td>${m.nm}</td>
+      <td class="${colorPct(m.pi,0.45)}">${pct(m.pi)}</td>
+      <td class="${colorPct(m.pr,0.75)}">${pct(m.pr)}</td>
+      <td class="${colorPct(m.ba,0.40)}">${pct(m.ba)}</td>
+      <td class="${colorPct(m.sh,0.20)}">${pct(m.sh)}</td>
+      <td class="${colorPct(m.css,0.30)}">${pct(m.css)}</td>
+      <td>${m.reviews}</td>
+    </tr>`;
+  }).filter(Boolean);
+  const targetRow = `<tr style="background:var(--gold);color:white;font-weight:700">
+    <td>TARGET</td><td>—</td><td>45%</td><td>75%</td><td>40%</td><td>20%</td><td>30%</td><td>—</td>
+  </tr>`;
+  $('attach-table').innerHTML = ahead + '<tbody>' + arows.join('') + targetRow + '</tbody>';
+}
+
+function renderVendors(rows) {
+  const vendors = {};
+  rows.filter(r=>r.mt&&r.s&&r.ve).forEach(r => {
+    if (!vendors[r.ve]) vendors[r.ve] = {sales:0,revenue:0};
+    vendors[r.ve].sales++;
+    vendors[r.ve].revenue += r.t||0;
+  });
+  const total = Object.values(vendors).reduce((s,v)=>s+v.revenue,0);
+  const sorted = Object.entries(vendors).sort((a,b)=>b[1].revenue-a[1].revenue);
+  const thead = `<thead><tr><th style="text-align:left">Vendor</th><th>Units</th><th>Revenue</th><th>Mix %</th><th>Avg $</th></tr></thead>`;
+  const vrows = sorted.map(([name,v]) => `<tr>
+    <td>${name}</td><td>${v.sales}</td><td>${money(v.revenue)}</td>
+    <td>${pct(v.revenue/total)}</td><td>${money(v.revenue/v.sales)}</td>
+  </tr>`);
+  $('vendor-table').innerHTML = thead + '<tbody>' + vrows.join('') + '</tbody>';
+  destroyChart('vendor-chart');
+  charts['vendor-chart'] = new Chart($('vendor-chart'), {
+    type: 'doughnut',
+    data: {
+      labels: sorted.map(([n])=>n),
+      datasets:[{data:sorted.map(([,v])=>Math.round(v.revenue)),
+        backgroundColor:['#0B2E7C','#EB9222','#1E3A8A','#4F86C6','#6B9FD4','#94A3B8'],borderWidth:2}]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:11}}}}}
+  });
+}
+
+function renderExchanges(rows) {
+  const ex = rows.filter(r=>r.ct==='E');
+  const thead = `<thead><tr><th style="text-align:left">Rep</th><th>Exchanges</th><th>Total Sales</th><th>Exchange Rate</th></tr></thead>`;
+  const erows = REPS.map(rep => {
+    const repEx = ex.filter(r=>r.r===rep).length;
+    const repSales = rows.filter(r=>r.r===rep&&r.mt&&r.s).length;
+    if (!repSales) return '';
+    const rate = repEx/repSales;
+    return `<tr>
+      <td>${rep}</td><td>${repEx}</td><td>${repSales}</td>
+      <td class="${rate>0.1?'bad':rate>0.05?'warn':'good'}">${pct(rate)}</td>
+    </tr>`;
+  }).filter(Boolean);
+  const totEx = ex.length, totSales = rows.filter(r=>r.mt&&r.s).length;
+  erows.push(`<tr class="total-row"><td>TOTAL</td><td>${totEx}</td><td>${totSales}</td><td>${pct(totEx/totSales)}</td></tr>`);
+  $('exchange-table').innerHTML = thead + '<tbody>' + erows.join('') + '</tbody>';
+}
+
+function destroyChart(id) {
+  if (charts[id]) { charts[id].destroy(); delete charts[id]; }
+}
+
+// ── TABS ─────────────────────────────────────────────────────────────────────
+function showTab(name, btn) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  btn.dataset.tab = name;
+  ['overview','reps','monthly','vendors','exchanges'].forEach(t => {
+    $('tab-'+t).style.display = t===name ? '' : 'none';
+  });
+  if (name==='reps') renderReps(getFiltered());
+  if (name==='monthly') renderMonthly();
+  if (name==='vendors') renderVendors(getFiltered());
+  if (name==='exchanges') renderExchanges(getFiltered());
+}
+
+// ── LIVE DATA ─────────────────────────────────────────────────────────────────
+function setStatus(type, text) {
+  const bar = $('status-bar');
+  bar.className = 'status-bar status-'+type;
+  $('status-text').textContent = text;
+  $('refresh-btn').style.display = type==='live' ? '' : 'none';
+  $('connect-btn').style.display = type==='live' ? 'none' : '';
+}
+
+async function fetchLive(url) {
+  const rawTarget = url || document.getElementById('sheet-url-input')?.value || SHEETS_URL;
+  if (!rawTarget) return;
+  setStatus('loading', '🟡 Fetching live data from Google Sheets...');
+
+  for (const proxyFn of CORS_PROXIES) {
+    try {
+      const proxyUrl = proxyFn(rawTarget);
+      const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(8000) });
+      if (!res.ok) continue;
+      const csv = await res.text();
+      // Sanity-check: response must look like CSV, not an error page
+      if (!csv.trim().startsWith('Date') && !csv.includes(',')) continue;
+      const parsed = parseCSV(csv);
+      if (parsed.length > 0) {
+        liveData = parsed;
+        const now = new Date().toLocaleTimeString();
+        setStatus('live', `🟢 Live · Updated ${now} · ${parsed.length} transactions · auto-refreshes every 5 min`);
+        render();
+        return;
+      }
+    } catch(e) {
+      // This proxy failed — try the next one
+      continue;
+    }
+  }
+
+  // All proxies failed
+  setStatus('error', '🔴 Could not reach Google Sheets — showing Q1 2026 static data');
+}
+
+function parseCSV(csv) {
+  const MO = {'01':'Jan','02':'Feb','03':'Mar','04':'Apr','05':'May','06':'Jun',
+               '07':'Jul','08':'Aug','09':'Sep','10':'Oct','11':'Nov','12':'Dec'};
+  const CI = {
+    date:0,rep:1,loc:2,itype:3,ctype:8,bedroom:9,units:10,
+    mattAmt:11,totalAmt:12,vendor:15,
+    protQty:31,protAmt:32,protFull:33,
+    pillQty:34,pillAmt:36,shtQty:37,shtAmt:38,
+    baseQty:39,baseAmt:41,revComp:46,nmAmt:48,quote:58
+  };
+
+  // Step 1: RFC 4180-compliant CSV parser (handles quoted fields with embedded commas/newlines)
+  function parseCSVLine(line) {
+    const result = [];
+    let field = '', inQuote = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (inQuote) {
+        if (ch === '"' && line[i+1] === '"') { field += '"'; i++; }
+        else if (ch === '"') { inQuote = false; }
+        else { field += ch; }
+      } else {
+        if (ch === '"') { inQuote = true; }
+        else if (ch === ',') { result.push(field); field = ''; }
+        else { field += ch; }
+      }
+    }
+    result.push(field);
+    return result;
+  }
+
+  // Reassemble logical rows (multiline quoted fields span physical lines)
+  const rawLines = csv.split('\n');
+  const lines = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < rawLines.length; i++) {
+    const l = rawLines[i];
+    for (let c = 0; c < l.length; c++) { if (l[c] === '"') inQ = !inQ; }
+    cur = cur ? cur + '\n' + l : l;
+    if (!inQ) { lines.push(cur); cur = ''; }
+  }
+  if (cur) lines.push(cur);
+
+  if (lines.length < 2) return [];
+  const records = [];
+
+  // Step 2: parse each logical row using the RFC 4180 parser
+  lines.slice(1).forEach(line => {
+    const cols = parseCSVLine(line);
+    if (cols.length < 13) return;
+    const str = i => (cols[i] || '').split('\n')[0].trim();
+    const num = i => { const v = parseFloat((cols[i]||'').replace(/[$,]/g,'')); return isNaN(v) ? 0 : v; };
+    const itype = str(CI.itype);
+    if (!['Mattress Sale','Non-Mattress Sale Only','Prospect-No Sale'].includes(itype)) return;
+    const rep = str(CI.rep), loc = str(CI.loc);
+    if (!rep || !loc) return;
+    let month = '';
+    try { const d = new Date(str(CI.date)); if (!isNaN(d)) month = MO[String(d.getMonth()+1).padStart(2,'0')]||''; } catch(e) {}
+    if (!month) return;
+    const ctRaw = (cols[CI.ctype]||'').replace(/"/g,'');
+    let ct = '1';
+    if (ctRaw.includes('2nd')) ct = '2';
+    else if (ctRaw.includes('Returning')) ct = 'R';
+    else if (ctRaw.includes('Comeback')) ct = 'C';
+    const isMatt = itype === 'Mattress Sale';
+    const bedroom = (cols[CI.bedroom]||'').replace(/"/g,'').toLowerCase();
+    const protFull = str(CI.protFull).toLowerCase();
+    records.push({
+      m: month, r: rep==='Rebecca'?'Becca':rep, l: loc==='Foscoe'?'F':'M',
+      s: (isMatt||itype==='Non-Mattress Sale Only')?1:0,
+      t: isMatt ? num(CI.totalAmt) : num(CI.nmAmt),
+      mt: isMatt?1:0,
+      pr: (protFull.includes('full price')||protFull==='yes')?1:0,
+      pi: num(CI.pillQty)>0?1:0, sh: num(CI.shtQty)>0?1:0, b: num(CI.baseQty)>0?1:0,
+      rv: str(CI.revComp).toLowerCase()==='yes'?1:0,
+      ms: bedroom.includes('master')?1:0,
+      q:  str(CI.quote).toLowerCase()==='yes'?1:0, ct,
+      ac: num(CI.protAmt)+num(CI.pillAmt)+num(CI.shtAmt)+num(CI.baseAmt),
+      ve: str(CI.vendor), un: num(CI.units)||1, ma: num(CI.mattAmt)
+    });
+  });
+  return records;
+}
+
+
+function toggleConnect() {
+  const p = $("connect-panel");
+  p.classList.toggle("show");
+}
+
+function connectSheet() {
+  const url = $("sheet-url-input").value;
+  $("connect-panel").classList.remove("show");
+  fetchLive(url);
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+render();
+fetchLive();
+setInterval(() => fetchLive(), 5 * 60 * 1000);
+</script>
+</body>
+</html>
