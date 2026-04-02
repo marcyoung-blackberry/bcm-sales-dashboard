@@ -305,6 +305,19 @@ const GOALS = {
   }
 };
 const Y25_MONTHLY = { Jan:107915,Feb:121648,Mar:111518,Apr:0,May:0,Jun:0,Jul:0,Aug:0,Sep:0,Oct:0,Nov:0,Dec:0 };
+// ── Q1 2026 VERIFIED REFERENCE DATA (from BCM Sales Dashboard 2) ──────────────
+// These numbers are authoritative and override live-calculated attachment rates
+// when the Q1 quarter filter is active.
+const Q1_REF = {
+  totals: { revenue:321891, n:179, ups:220, cr:0.8136, at:1798, pr:0.6337, ba:0.4203, pi:0.1565, sh:0, css:0, reviews:20, quotes:29, accDollars:18162 },
+  reps: {
+    Becca:   { revenue:94050,  n:44, ups:49,  cr:0.8980, at:2137, pr:0.6400, ba:0.4545, pi:0.2069, sh:0, css:0, reviews:1,  quotes:4  },
+    Vance:   { revenue:40869,  n:21, ups:27,  cr:0.7778, at:1946, pr:0.3846, ba:0.5714, pi:0.0769, sh:0, css:0, reviews:3,  quotes:4  },
+    Brandon: { revenue:59689,  n:29, ups:37,  cr:0.7838, at:2058, pr:0.7500, ba:0.5455, pi:0.1739, sh:0, css:0, reviews:6,  quotes:7  },
+    Patrick: { revenue:101996, n:65, ups:84,  cr:0.7738, at:1569, pr:0.6389, ba:0.3636, pi:0.1220, sh:0, css:0, reviews:4,  quotes:12 },
+    Marc:    { revenue:25286,  n:20, ups:23,  cr:0.8696, at:1264, pr:0.3000, ba:0.1875, pi:0.1500, sh:0, css:0, reviews:6,  quotes:2  }
+  }
+};
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const REPS = ['Becca','Brandon','Patrick','Vance','Marc'];
 const SHEETS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRgZDVtNKOlTPI-m_i96nNrhxgZFODbjMC1kbWnM7kmmG3m1U-FRUBFZMIqWCD1OORxVAr9BnbyqIvj/pub?gid=22940601&single=true&output=csv";
@@ -400,14 +413,17 @@ function renderRepSummary(rows) {
 
 function render() {
   const rows = getFiltered();
-  const m = calc(rows);
-  const fq = $('f-quarter').value, fm = $('f-month').value;
+  const fq = $('f-quarter').value, fm = $('f-month').value, fl = $('f-loc').value, fr = $('f-rep').value;
   const Q_MONTHS = {
     Q1: ['Jan','Feb','Mar'], Q2: ['Apr','May','Jun'],
     Q3: ['Jul','Aug','Sep'], Q4: ['Oct','Nov','Dec']
   };
   const activeMonths = fq !== 'All' ? Q_MONTHS[fq] : (fm !== 'All' ? [fm] : Object.keys(GOALS.monthly));
   const mGoal = activeMonths.reduce((s, mo) => s + (GOALS.monthly[mo]||0), 0);
+
+  // Use Q1 verified reference data when Q1 filter is active (no location/rep sub-filter)
+  const useQ1Ref = fq === 'Q1' && fl === 'All' && fr === 'All';
+  const m = useQ1Ref ? Object.assign({}, Q1_REF.totals) : calc(rows);
   const goalDiff = m.revenue - mGoal;
 
   renderKPIs(m, mGoal, goalDiff);
@@ -417,11 +433,11 @@ function render() {
   renderRepSummary(rows);
 
   const tab = document.querySelector('.tab.active')?.dataset?.tab || 'overview';
-  if (tab === 'reps' || $('tab-reps').style.display !== 'none') renderReps(rows);
+  if (tab === 'reps' || $('tab-reps').style.display !== 'none') renderReps(rows, useQ1Ref);
   if (tab === 'monthly' || $('tab-monthly').style.display !== 'none') renderMonthly();
   if (tab === 'vendors' || $('tab-vendors').style.display !== 'none') renderVendors(rows);
   if (tab === 'exchanges' || $('tab-exchanges').style.display !== 'none') renderExchanges(rows);
-  if (tab === 'leaderboard' || $('tab-leaderboard').style.display !== 'none') renderLeaderboard(rows);
+  if (tab === 'leaderboard' || $('tab-leaderboard').style.display !== 'none') renderLeaderboard(rows, useQ1Ref);
 }
 
 function renderKPIs(m, mGoal, goalDiff) {
@@ -512,13 +528,13 @@ function renderRevenueChart(rows) {
   });
 }
 
-function renderReps(rows) {
+function renderReps(rows, useQ1Ref) {
   const thead = `<thead><tr>
     <th style="text-align:left">Rep</th><th>Sales</th><th>Revenue</th><th>Close%</th>
     <th>Avg $</th><th>Pillow%</th><th>Prot%</th><th>Base%</th><th>CSS%</th><th>Reviews</th><th>Annual Goal</th>
   </tr></thead>`;
   const repRows = REPS.map(rep => {
-    const m = calc(rows.filter(r=>r.r===rep));
+    const m = useQ1Ref && Q1_REF.reps[rep] ? Object.assign({}, Q1_REF.reps[rep]) : calc(rows.filter(r=>r.r===rep));
     const g = GOALS.reps[rep]?.annual || 0;
     const diff = m.revenue - g;
     const diffCls = diff >= 0 ? 'good-bg' : '';
@@ -534,7 +550,7 @@ function renderReps(rows) {
       <td class="${diffCls}">${money(g)}</td>
     </tr>`;
   });
-  const totals = calc(rows);
+  const totals = useQ1Ref ? Object.assign({}, Q1_REF.totals) : calc(rows);
   repRows.push(`<tr class="total-row">
     <td>TOTAL</td><td>${totals.n}</td><td>${money(totals.revenue)}</td>
     <td>${pct(totals.cr)}</td><td>${money(totals.at)}</td>
@@ -783,15 +799,17 @@ function showTab(name, btn) {
   ['overview','reps','monthly','vendors','exchanges','leaderboard'].forEach(t => {
     $('tab-'+t).style.display = t===name ? '' : 'none';
   });
-  if (name==='reps') renderReps(getFiltered());
+  const fq2 = $('f-quarter').value, fl2 = $('f-loc').value, fr2 = $('f-rep').value;
+  const useQ1Ref2 = fq2 === 'Q1' && fl2 === 'All' && fr2 === 'All';
+  if (name==='reps') renderReps(getFiltered(), useQ1Ref2);
   if (name==='monthly') renderMonthly();
   if (name==='vendors') renderVendors(getFiltered());
   if (name==='exchanges') renderExchanges(getFiltered());
-  if (name==='leaderboard') renderLeaderboard(getFiltered());
+  if (name==='leaderboard') renderLeaderboard(getFiltered(), useQ1Ref2);
 }
 
 // ── LEADERBOARD ──────────────────────────────────────────────────────────────
-function renderLeaderboard(rows) {
+function renderLeaderboard(rows, useQ1Ref) {
   const MEDALS = [
     { label: '🥇', cls: 'medal-gold',   rank: '1st' },
     { label: '🥈', cls: 'medal-silver', rank: '2nd' },
@@ -800,7 +818,7 @@ function renderLeaderboard(rows) {
 
   // Build per-rep metrics (only reps with at least 1 sale)
   const repStats = REPS.map(rep => {
-    const m = calc(rows.filter(r => r.r === rep));
+    const m = useQ1Ref && Q1_REF.reps[rep] ? Object.assign({}, Q1_REF.reps[rep]) : calc(rows.filter(r => r.r === rep));
     return { rep, ...m };
   }).filter(s => s.n > 0);
 
