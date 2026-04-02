@@ -124,6 +124,25 @@ tr:nth-child(even) td { background: #f9fafb; }
   .card-value { font-size: 20px; }
   .attach-value { font-size: 22px; }
 }
+/* LEADERBOARD */
+.lb-card { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); overflow: hidden; }
+.lb-header { display: flex; align-items: center; gap: 12px; padding: 14px 16px 10px; background: var(--navy); color: white; }
+.lb-icon { font-size: 22px; line-height: 1; }
+.lb-title { font-size: 13px; font-weight: 800; letter-spacing: 0.03em; }
+.lb-desc { font-size: 10px; color: #94a3b8; margin-top: 1px; }
+.lb-rows { padding: 8px 0; }
+.lb-row { display: grid; grid-template-columns: 36px 1fr auto; align-items: center; gap: 8px; padding: 9px 16px; border-bottom: 1px solid var(--border); }
+.lb-row:last-child { border-bottom: none; }
+.lb-medal { font-size: 20px; text-align: center; }
+.lb-rep { font-size: 13px; font-weight: 700; color: var(--navy); }
+.lb-val { font-size: 15px; font-weight: 800; color: var(--navy); text-align: right; }
+.lb-sub { grid-column: 2 / 4; font-size: 10px; color: var(--gray); margin-top: -6px; }
+.medal-gold { background: linear-gradient(90deg, #fffbeb 0%, white 100%); }
+.medal-silver { background: linear-gradient(90deg, #f8fafc 0%, white 100%); }
+.medal-bronze { background: linear-gradient(90deg, #fff7f0 0%, white 100%); }
+.lb-empty { opacity: 0.4; }
+.lb-val.good { color: var(--green); }
+.lb-val.bad { color: var(--red); }
 </style>
 </head>
 <body>
@@ -199,6 +218,7 @@ tr:nth-child(even) td { background: #f9fafb; }
   <button class="tab" onclick="showTab('monthly',this)">Monthly</button>
   <button class="tab" onclick="showTab('vendors',this)">Vendors</button>
   <button class="tab" onclick="showTab('exchanges',this)">Exchanges</button>
+  <button class="tab" onclick="showTab('leaderboard',this)">🏆 Leaderboard</button>
 
 </div>
 
@@ -264,6 +284,14 @@ tr:nth-child(even) td { background: #f9fafb; }
   </div>
 
   <!-- Q1 SUMMARY TAB -->
+
+  <!-- LEADERBOARD TAB -->
+  <div id="tab-leaderboard" style="display:none">
+    <div class="section-header" style="margin-bottom:4px">Sales Leaderboard</div>
+    <div style="font-size:11px;color:var(--gray);margin-bottom:16px">Rankings update with your current Quarter / Month / Location filters</div>
+    <div id="leaderboard-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px"></div>
+  </div>
+
 </div>
 
 <script>
@@ -393,6 +421,7 @@ function render() {
   if (tab === 'monthly' || $('tab-monthly').style.display !== 'none') renderMonthly();
   if (tab === 'vendors' || $('tab-vendors').style.display !== 'none') renderVendors(rows);
   if (tab === 'exchanges' || $('tab-exchanges').style.display !== 'none') renderExchanges(rows);
+  if (tab === 'leaderboard' || $('tab-leaderboard').style.display !== 'none') renderLeaderboard(rows);
 }
 
 function renderKPIs(m, mGoal, goalDiff) {
@@ -751,13 +780,136 @@ function showTab(name, btn) {
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
   btn.dataset.tab = name;
-  ['overview','reps','monthly','vendors','exchanges'].forEach(t => {
+  ['overview','reps','monthly','vendors','exchanges','leaderboard'].forEach(t => {
     $('tab-'+t).style.display = t===name ? '' : 'none';
   });
   if (name==='reps') renderReps(getFiltered());
   if (name==='monthly') renderMonthly();
   if (name==='vendors') renderVendors(getFiltered());
   if (name==='exchanges') renderExchanges(getFiltered());
+  if (name==='leaderboard') renderLeaderboard(getFiltered());
+}
+
+// ── LEADERBOARD ──────────────────────────────────────────────────────────────
+function renderLeaderboard(rows) {
+  const MEDALS = [
+    { label: '🥇', cls: 'medal-gold',   rank: '1st' },
+    { label: '🥈', cls: 'medal-silver', rank: '2nd' },
+    { label: '🥉', cls: 'medal-bronze', rank: '3rd' }
+  ];
+
+  // Build per-rep metrics (only reps with at least 1 sale)
+  const repStats = REPS.map(rep => {
+    const m = calc(rows.filter(r => r.r === rep));
+    return { rep, ...m };
+  }).filter(s => s.n > 0);
+
+  // Define the 6 KPI categories
+  const categories = [
+    {
+      id: 'total-sales',
+      title: 'Total Sales',
+      icon: '💰',
+      key: s => s.revenue,
+      fmt: s => money(s.revenue),
+      sub: s => `${s.n} sales closed`,
+      desc: 'Total revenue'
+    },
+    {
+      id: 'avg-sale',
+      title: 'Average Sale',
+      icon: '🎯',
+      key: s => s.at,
+      fmt: s => money(s.at),
+      sub: s => `${s.n} sales`,
+      desc: 'Avg ticket size'
+    },
+    {
+      id: 'close-rate',
+      title: 'Close Rate',
+      icon: '🔒',
+      key: s => s.cr,
+      fmt: s => pct(s.cr),
+      sub: s => `${s.n} of ${s.ups} ups`,
+      desc: 'Target: 81%',
+      target: 0.81
+    },
+    {
+      id: 'protector',
+      title: 'Mattress Protector',
+      icon: '🛡️',
+      key: s => s.pr,
+      fmt: s => pct(s.pr),
+      sub: s => `${s.nm} mattress sales`,
+      desc: 'Target: 75%',
+      target: 0.75
+    },
+    {
+      id: 'pillow',
+      title: 'Pillow Attachment',
+      icon: '🪶',
+      key: s => s.pi,
+      fmt: s => pct(s.pi),
+      sub: s => `${s.nm} mattress sales`,
+      desc: 'Target: 45%',
+      target: 0.45
+    },
+    {
+      id: 'base',
+      title: 'Adjustable Base',
+      icon: '⚙️',
+      key: s => s.ba,
+      fmt: s => pct(s.ba),
+      sub: s => `of master bedroom sales`,
+      desc: 'Target: 40%',
+      target: 0.40
+    }
+  ];
+
+  const html = categories.map(cat => {
+    // Sort reps by this KPI descending, filter out zero values for attachment rates
+    const sorted = [...repStats]
+      .filter(s => cat.id === 'total-sales' || cat.id === 'avg-sale' || cat.id === 'close-rate' ? true : cat.key(s) > 0)
+      .sort((a, b) => cat.key(b) - cat.key(a));
+
+    const top3 = sorted.slice(0, 3);
+
+    const podiumRows = top3.map((s, i) => {
+      const medal = MEDALS[i];
+      const val = cat.key(s);
+      const atTarget = cat.target ? val >= cat.target : true;
+      const valCls = cat.target ? (atTarget ? 'good' : 'bad') : '';
+      return `
+        <div class="lb-row ${medal.cls}">
+          <div class="lb-medal">${medal.label}</div>
+          <div class="lb-rep">${s.rep}</div>
+          <div class="lb-val ${valCls}">${cat.fmt(s)}</div>
+          <div class="lb-sub">${cat.sub(s)}</div>
+        </div>`;
+    }).join('');
+
+    const emptyRows = top3.length < 3 ? Array(3 - top3.length).fill('').map((_, i) => `
+        <div class="lb-row lb-empty">
+          <div class="lb-medal">${MEDALS[top3.length + i].label}</div>
+          <div class="lb-rep" style="color:var(--light)">No data</div>
+          <div class="lb-val">—</div>
+          <div class="lb-sub"></div>
+        </div>`).join('') : '';
+
+    return `
+      <div class="lb-card">
+        <div class="lb-header">
+          <span class="lb-icon">${cat.icon}</span>
+          <div>
+            <div class="lb-title">${cat.title}</div>
+            <div class="lb-desc">${cat.desc}</div>
+          </div>
+        </div>
+        <div class="lb-rows">${podiumRows}${emptyRows}</div>
+      </div>`;
+  }).join('');
+
+  $('leaderboard-grid').innerHTML = html;
 }
 
 // ── QUARTER FILTER HELPER ─────────────────────────────────────────────────────
