@@ -1127,13 +1127,12 @@ function parseCSV(csv) {
     else if (ctRaw.includes('Comeback')) ct = 'C';
     const isMatt = isSale;
     const bedroom = (cols[CI.bedroom]||'').replace(/"/g,'').toLowerCase();
-    const protFull = str(CI.protFull).toLowerCase();
     records.push({
       m: month, r: rep==='Rebecca'?'Becca':rep, l: loc==='Foscoe'?'F':'M',
       s: (isMatt||isNonMatt)?1:0,
       t: isMatt ? num(CI.totalAmt) : (isNonMatt ? (num(CI.nmAmt)||num(CI.totalAmt)) : 0),
       mt: isMatt?1:0,
-      pr: (protFull.includes('full price')||protFull==='yes')?1:0,
+      pr: num(CI.protQty)>0?1:0,
       pi: num(CI.pillQty)>0?1:0, sh: num(CI.shtQty)>0?1:0, b: num(CI.baseQty)>0?1:0,
       rv: str(CI.revComp).toLowerCase()==='yes'?1:0,
       ms: bedroom.includes('master')?1:0,
