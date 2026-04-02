@@ -815,7 +815,11 @@ function parseCSV(csv) {
     const str = i => (cols[i] || '').split('\n')[0].trim();
     const num = i => { const v = parseFloat((cols[i]||'').replace(/[$,]/g,'')); return isNaN(v) ? 0 : v; };
     const itype = str(CI.itype);
-    if (!['Mattress Sale','Non-Mattress Sale Only','Prospect-No Sale'].includes(itype)) return;
+    // Accept all known interaction type variants (JotForm new format + legacy import format)
+    const isSale = itype === 'Mattress Sale';
+    const isNonMatt = itype === 'Non-Mattress Sale Only' || itype === 'Non-Mattress Sale';
+    const isProspect = itype === 'Prospect-No Sale' || itype === 'Walk-in (No Sale)' || itype === 'Quote Given';
+    if (!isSale && !isNonMatt && !isProspect) return;
     const rep = str(CI.rep), loc = str(CI.loc);
     if (!rep || !loc) return;
     let month = '';
@@ -826,13 +830,13 @@ function parseCSV(csv) {
     if (ctRaw.includes('2nd')) ct = '2';
     else if (ctRaw.includes('Returning')) ct = 'R';
     else if (ctRaw.includes('Comeback')) ct = 'C';
-    const isMatt = itype === 'Mattress Sale';
+    const isMatt = isSale;
     const bedroom = (cols[CI.bedroom]||'').replace(/"/g,'').toLowerCase();
     const protFull = str(CI.protFull).toLowerCase();
     records.push({
       m: month, r: rep==='Rebecca'?'Becca':rep, l: loc==='Foscoe'?'F':'M',
-      s: (isMatt||itype==='Non-Mattress Sale Only')?1:0,
-      t: isMatt ? num(CI.totalAmt) : num(CI.nmAmt),
+      s: (isMatt||isNonMatt)?1:0,
+      t: isMatt ? num(CI.totalAmt) : (isNonMatt ? (num(CI.nmAmt)||num(CI.totalAmt)) : 0),
       mt: isMatt?1:0,
       pr: (protFull.includes('full price')||protFull==='yes')?1:0,
       pi: num(CI.pillQty)>0?1:0, sh: num(CI.shtQty)>0?1:0, b: num(CI.baseQty)>0?1:0,
