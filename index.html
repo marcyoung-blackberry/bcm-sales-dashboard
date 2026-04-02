@@ -189,6 +189,7 @@ tr:nth-child(even) td { background: #f9fafb; }
   <button class="tab" onclick="showTab('monthly',this)">Monthly</button>
   <button class="tab" onclick="showTab('vendors',this)">Vendors</button>
   <button class="tab" onclick="showTab('exchanges',this)">Exchanges</button>
+  <button class="tab" onclick="showTab('q1summary',this)">Q1 Summary</button>
 </div>
 
 <div class="content">
@@ -237,6 +238,21 @@ tr:nth-child(even) td { background: #f9fafb; }
   <div id="tab-exchanges" style="display:none">
     <div class="section-header">Comfort Exchanges</div>
     <div class="table-wrap"><table id="exchange-table"></table></div>
+  </div>
+
+  <!-- Q1 SUMMARY TAB -->
+  <div id="tab-q1summary" style="display:none">
+    <div class="section-header" style="margin-bottom:12px">Q1 2026 Final Results — Jan · Feb · Mar</div>
+    <div class="card-grid" id="q1-kpi-cards"></div>
+    <div style="height:16px"></div>
+    <div class="section-header" style="margin-bottom:8px">Q1 Attachment Rates</div>
+    <div class="attach-grid" id="q1-attach-cards"></div>
+    <div style="height:16px"></div>
+    <div class="section-header" style="margin-bottom:8px">Q1 by Location</div>
+    <div class="loc-grid" id="q1-loc-cards"></div>
+    <div style="height:16px"></div>
+    <div class="section-header" style="margin-bottom:8px">Q1 Rep Performance</div>
+    <div class="table-wrap"><table id="q1-rep-table"></table></div>
   </div>
 </div>
 
@@ -599,13 +615,111 @@ function showTab(name, btn) {
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
   btn.dataset.tab = name;
-  ['overview','reps','monthly','vendors','exchanges'].forEach(t => {
+  ['overview','reps','monthly','vendors','exchanges','q1summary'].forEach(t => {
     $('tab-'+t).style.display = t===name ? '' : 'none';
   });
   if (name==='reps') renderReps(getFiltered());
   if (name==='monthly') renderMonthly();
   if (name==='vendors') renderVendors(getFiltered());
   if (name==='exchanges') renderExchanges(getFiltered());
+  if (name==='q1summary') renderQ1Summary();
+}
+
+// ── Q1 SUMMARY ───────────────────────────────────────────────────────────────
+function renderQ1Summary() {
+  const raw = liveData || RAW;
+  // Filter to Q1 months only
+  const q1 = raw.filter(r => r.m === 'Jan' || r.m === 'Feb' || r.m === 'Mar');
+  const m = calc(q1);
+
+  // Q1 Goal: sum of Jan+Feb+Mar monthly goals
+  const q1Goal = (GOALS.monthly['Jan'] || 0) + (GOALS.monthly['Feb'] || 0) + (GOALS.monthly['Mar'] || 0);
+  const goalDiff = m.revenue - q1Goal;
+
+  // KPI cards
+  const kpis = [
+    {label:'Q1 Revenue', value:money(m.revenue), sub:`${m.n} sales closed`},
+    {label:'vs Q1 Goal', value:(goalDiff>=0?'+':'')+money(goalDiff), sub:`Goal: ${money(q1Goal)}`, cls:colorDiff(goalDiff)},
+    {label:'Avg Ticket', value:money(m.at), sub:`${m.n} mattress sales`},
+    {label:'Close Rate', value:pct(m.cr,0), sub:'Target: 81%', cls:colorPct(m.cr,0.81)},
+    {label:'Accessory $', value:money(m.accDollars), sub:pct(m.accDollars/Math.max(m.revenue,1))+' of revenue'},
+    {label:'Reviews', value:m.reviews, sub:`${m.quotes} quotes out`},
+  ];
+  $('q1-kpi-cards').innerHTML = kpis.map(k=>`
+    <div class="card">
+      <div class="card-label">${k.label}</div>
+      <div class="card-value ${k.cls||''}">${k.value}</div>
+      <div class="card-sub">${k.sub}</div>
+    </div>`).join('');
+
+  // Attachment rate cards
+  const attaches = [
+    {label:'Pillow', val:m.pi, target:0.45, note:'Target 45%'},
+    {label:'Protector (paid)', val:m.pr, target:0.75, note:'Target 75%'},
+    {label:'Base', val:m.ba, target:0.40, note:'Target 40% · master'},
+    {label:'Sheets', val:m.sh, target:0.20, note:'Target 20%'},
+    {label:'Complete Sleep System', val:m.css, target:0.30, note:'Prot+Pillow+Sheets · 30%'},
+  ];
+  $('q1-attach-cards').innerHTML = attaches.map(a => {
+    const ratio = a.target ? a.val/a.target : 0;
+    const cls = ratio >= 1 ? 'good' : ratio >= 0.75 ? 'warn' : 'bad';
+    const barColor = ratio >= 1 ? '#16a34a' : ratio >= 0.75 ? '#d97706' : '#dc2626';
+    const barW = Math.min(100, ratio*100).toFixed(0);
+    return `
+    <div class="attach-card">
+      <div class="attach-label">${a.label}</div>
+      <div class="attach-value ${cls}">${pct(a.val)}</div>
+      <div class="attach-target">${a.note}</div>
+      <div class="progress-wrap"><div class="progress-bar" style="width:${barW}%;background:${barColor}"></div></div>
+    </div>`;
+  }).join('');
+
+  // Location cards
+  const locs = [{key:'F',name:'📍 Foscoe',cls:'foscoe'},{key:'M',name:'📍 Mall',cls:'mall'}];
+  $('q1-loc-cards').innerHTML = locs.map(loc => {
+    const lm = calc(q1.filter(r=>r.l===loc.key));
+    return `
+    <div class="loc-card">
+      <div class="loc-title ${loc.cls}">${loc.name}</div>
+      <div class="loc-metrics">
+        <div><div class="loc-metric-label">Revenue</div><div class="loc-metric-val">${money(lm.revenue)}</div></div>
+        <div><div class="loc-metric-label">Sales</div><div class="loc-metric-val">${lm.n}</div></div>
+        <div><div class="loc-metric-label">Close %</div><div class="loc-metric-val">${pct(lm.cr,0)}</div></div>
+        <div><div class="loc-metric-label">Avg Ticket</div><div class="loc-metric-val">${money(lm.at)}</div></div>
+        <div><div class="loc-metric-label">Pillow %</div><div class="loc-metric-val ${colorPct(lm.pi,0.45)}">${pct(lm.pi)}</div></div>
+        <div><div class="loc-metric-label">Protector %</div><div class="loc-metric-val ${colorPct(lm.pr,0.75)}">${pct(lm.pr)}</div></div>
+        <div><div class="loc-metric-label">Base %</div><div class="loc-metric-val ${colorPct(lm.ba,0.40)}">${pct(lm.ba)}</div></div>
+        <div><div class="loc-metric-label">Reviews</div><div class="loc-metric-val">${lm.reviews}</div></div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Rep performance table
+  const thead = `<thead><tr>
+    <th style="text-align:left">Rep</th><th>Sales</th><th>Revenue</th><th>Close%</th>
+    <th>Avg $</th><th>Pillow%</th><th>Prot%</th><th>Base%</th><th>CSS%</th><th>Reviews</th>
+  </tr></thead>`;
+  const repRows = REPS.map(rep => {
+    const rm = calc(q1.filter(r=>r.r===rep));
+    return `<tr>
+      <td>${rep}</td><td>${rm.n}</td><td>${money(rm.revenue)}</td>
+      <td class="${colorPct(rm.cr,0.81)}">${pct(rm.cr)}</td>
+      <td>${money(rm.at)}</td>
+      <td class="${colorPct(rm.pi,0.45)}">${pct(rm.pi)}</td>
+      <td class="${colorPct(rm.pr,0.75)}">${pct(rm.pr)}</td>
+      <td class="${colorPct(rm.ba,0.40)}">${pct(rm.ba)}</td>
+      <td class="${colorPct(rm.css,0.30)}">${pct(rm.css)}</td>
+      <td>${rm.reviews}</td>
+    </tr>`;
+  });
+  const totals = calc(q1);
+  repRows.push(`<tr class="total-row">
+    <td>Q1 TOTAL</td><td>${totals.n}</td><td>${money(totals.revenue)}</td>
+    <td>${pct(totals.cr)}</td><td>${money(totals.at)}</td>
+    <td>${pct(totals.pi)}</td><td>${pct(totals.pr)}</td><td>${pct(totals.ba)}</td>
+    <td>${pct(totals.css)}</td><td>${totals.reviews}</td>
+  </tr>`);
+  $('q1-rep-table').innerHTML = thead + '<tbody>' + repRows.join('') + '</tbody>';
 }
 
 // ── LIVE DATA ─────────────────────────────────────────────────────────────────
