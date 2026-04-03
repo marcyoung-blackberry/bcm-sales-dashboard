@@ -341,13 +341,13 @@ function getGoalLabel(fq, fm) {
 const Y25_MONTHLY = { Jan:107915,Feb:121648,Mar:111518,Apr:0,May:0,Jun:0,Jul:0,Aug:0,Sep:0,Oct:0,Nov:0,Dec:0 };
 // ── Q1 2026 VERIFIED REFERENCE DATA (from BCM Sales Dashboard 2) ──────────────
 const Q1_REF = {
-  totals: { revenue:321891, n:179, ups:220, cr:0.8136, at:1798, pr:0.6337, ba:0.4203, pi:0.1565, sh:0, css:0, reviews:20, quotes:29, accDollars:18162 },
+  totals: { revenue:321891, n:179, ups:220, cr:0.8136, at:1798, pr:0.6337, ba:0.0424, pi:0.1565, sh:0, css:0, reviews:20, quotes:29, accDollars:18162 },
   reps: {
-    Becca:   { revenue:94050,  n:44, ups:49,  cr:0.8980, at:2137, pr:0.6400, ba:0.4545, pi:0.2069, sh:0, css:0, reviews:1,  quotes:4  },
-    Vance:   { revenue:40869,  n:21, ups:27,  cr:0.7778, at:1946, pr:0.3846, ba:0.5714, pi:0.0769, sh:0, css:0, reviews:3,  quotes:4  },
-    Brandon: { revenue:59689,  n:29, ups:37,  cr:0.7838, at:2058, pr:0.7500, ba:0.5455, pi:0.1739, sh:0, css:0, reviews:6,  quotes:7  },
-    Patrick: { revenue:101996, n:65, ups:84,  cr:0.7738, at:1569, pr:0.6389, ba:0.3636, pi:0.1220, sh:0, css:0, reviews:4,  quotes:12 },
-    Marc:    { revenue:25286,  n:20, ups:23,  cr:0.8696, at:1264, pr:0.8333, ba:0.2857, pi:0.2500, sh:0, css:0, reviews:6,  quotes:2  }
+    Becca:   { revenue:94050,  n:44, ups:49,  cr:0.8980, at:2137, pr:0.6400, ba:0.0750, pi:0.2069, sh:0, css:0, reviews:1,  quotes:4  },
+    Vance:   { revenue:40869,  n:21, ups:27,  cr:0.7778, at:1946, pr:0.3846, ba:0.0000, pi:0.0769, sh:0, css:0, reviews:3,  quotes:4  },
+    Brandon: { revenue:59689,  n:29, ups:37,  cr:0.7838, at:2058, pr:0.7500, ba:0.1200, pi:0.1739, sh:0, css:0, reviews:6,  quotes:7  },
+    Patrick: { revenue:101996, n:65, ups:84,  cr:0.7738, at:1569, pr:0.6389, ba:0.0156, pi:0.1220, sh:0, css:0, reviews:4,  quotes:12 },
+    Marc:    { revenue:25286,  n:20, ups:23,  cr:0.8696, at:1264, pr:0.8333, ba:0.0000, pi:0.2500, sh:0, css:0, reviews:6,  quotes:2  }
   }
 };
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -382,13 +382,14 @@ function calc(rows) {
   if (!n) return {ups,n,nm:0,revenue:0,cr:0,at:0,pi:0,pr:0,ba:0,sh:0,css:0,reviews:0,quotes:rows.filter(r=>r.q).length,accDollars:0,exchanges:0};
   const rev = sales.reduce((s,r) => s + r.t, 0);
   const mattSales = sales.filter(r => r.mt), nm = mattSales.length;
-  const masterMatt = mattSales.filter(r => r.ms), nmm = masterMatt.length;
+  // Base% denominator: master bedroom OR 1st homeowner mattress sales, PLUS any mattress sale where a base was sold
+  const baseEligible = mattSales.filter(r => r.ms || r.ct === '1' || r.b), nbe = baseEligible.length;
   return {
     ups, n, nm, revenue: rev,
     cr: n/ups, at: rev/n,
     pi: nm ? mattSales.filter(r=>r.pi).length/nm : 0,
     pr: nm ? mattSales.filter(r=>r.pr).length/nm : 0,
-    ba: nmm ? masterMatt.filter(r=>r.b).length/nmm : 0,
+    ba: nbe ? mattSales.filter(r=>r.b).length/nbe : 0,
     sh: nm ? mattSales.filter(r=>r.sh).length/nm : 0,
     css: nm ? mattSales.filter(r=>r.pr&&r.pi&&r.sh).length/nm : 0,
     reviews: rows.filter(r=>r.rv).length,
