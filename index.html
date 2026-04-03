@@ -1071,8 +1071,15 @@ async function fetchLive(url) {
     }
   }
 
-  // All proxies failed
+  // All proxies failed — fall back to static Q1 data
+  // Auto-select Q1 filter so the static RAW data (Q1 only) displays correctly
+  const qSel = $('f-quarter');
+  if (qSel && qSel.value === 'All') {
+    qSel.value = 'Q1';
+    $('f-month').value = 'All';
+  }
   setStatus('error', '🔴 Could not reach Google Sheets — showing Q1 2026 static data');
+  render();
 }
 
 function parseCSV(csv) {
