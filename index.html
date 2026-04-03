@@ -256,13 +256,16 @@ tr:nth-child(even) td { background: #f9fafb; }
 
   <!-- VENDORS TAB -->
   <div id="tab-vendors" style="display:none">
-    <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
-      <div class="section-header" style="margin:0">Q1 2026 Vendor Performance</div>
-      <div style="display:flex;gap:8px">
-        <button class="btn-sm" id="vl-all" onclick="setVendorLoc('all',this)" style="background:var(--navy);color:white;border-color:var(--navy)">Both Stores</button>
-        <button class="btn-sm" id="vl-F" onclick="setVendorLoc('F',this)">Foscoe</button>
-        <button class="btn-sm" id="vl-M" onclick="setVendorLoc('M',this)">Mall</button>
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap;justify-content:space-between">
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <div class="section-header" style="margin:0">Q1 2026 Vendor Performance</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn-sm" id="vl-all" onclick="setVendorLoc('all',this)" style="background:var(--navy);color:white;border-color:var(--navy)">Both Stores</button>
+          <button class="btn-sm" id="vl-F" onclick="setVendorLoc('F',this)">Foscoe</button>
+          <button class="btn-sm" id="vl-M" onclick="setVendorLoc('M',this)">Mall</button>
+        </div>
       </div>
+      <div id="vendor-updated-label" style="font-size:11px;color:#64748b;font-style:italic"></div>
     </div>
     <div class="table-wrap"><table id="vendor-table"></table></div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
@@ -624,6 +627,7 @@ function renderMonthly() {
 }
 
 // ── Q1 VENDOR DATA (from FoscoeSupplierQ1.xlsx + MallSupplierQ1.xlsx) ─────────
+const VENDOR_UPDATED = 'March 31, 2026';
 const Q1_VENDORS = {
   F: [
     {vendor:'Stearns And Foster',units:16,retail:49184,cost:21076,profit:28108,gm:57.15,avg:2893.18},
@@ -726,6 +730,8 @@ function renderVendors(rows) {
     <td>${money(totalRetail/totalUnits)}</td>
   </tr>`);
   $('vendor-table').innerHTML = thead + '<tbody>' + vrows.join('') + '</tbody>';
+  const updEl = $('vendor-updated-label');
+  if (updEl) updEl.textContent = 'Cost data last updated: ' + VENDOR_UPDATED;
 
   // Revenue share doughnut
   const COLORS = ['#0B2E7C','#EB9222','#1E3A8A','#4F86C6','#6B9FD4','#94A3B8',
