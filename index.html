@@ -1125,7 +1125,7 @@ function parseCSV(csv) {
     mattAmt:11,totalAmt:12,vendor:15,
     protQty:31,protAmt:32,protFull:33,
     pillQty:34,pillAmt:36,shtQty:37,shtAmt:38,
-    baseQty:39,baseAmt:41,revComp:46,nmAmt:48,quote:58
+    baseQty:39,baseAmt:41,revComp:46,nmAmt:48,slQty:49,slAmt:50,quote:58
   };
 
   // Step 1: RFC 4180-compliant CSV parser (handles quoted fields with embedded commas/newlines)
@@ -1190,14 +1190,14 @@ function parseCSV(csv) {
     records.push({
       m: month, r: rep==='Rebecca'?'Becca':rep, l: loc==='Foscoe'?'F':'M',
       s: (isMatt||isNonMatt)?1:0,
-      t: isMatt ? num(CI.totalAmt) : (isNonMatt ? (num(CI.nmAmt)||num(CI.totalAmt)) : 0),
+      t: isMatt ? num(CI.totalAmt) : (isNonMatt ? (num(CI.nmAmt)||num(CI.slAmt)||num(CI.totalAmt)) : 0),
       mt: isMatt?1:0,
       pr: num(CI.protQty)>0?1:0,
       pi: num(CI.pillQty)>0?1:0, sh: num(CI.shtQty)>0?1:0, b: num(CI.baseQty)>0?1:0,
       rv: str(CI.revComp).toLowerCase()==='yes'?1:0,
       ms: bedroom.includes('master')?1:0,
       q:  str(CI.quote).toLowerCase()==='yes'?1:0, ct,
-      ac: num(CI.protAmt)+num(CI.pillAmt)+num(CI.shtAmt)+num(CI.baseAmt),
+      ac: num(CI.protAmt)+num(CI.pillAmt)+num(CI.shtAmt)+num(CI.baseAmt)+num(CI.slAmt),
       ve: str(CI.vendor), un: num(CI.units)||1, ma: num(CI.mattAmt)
     });
   });
