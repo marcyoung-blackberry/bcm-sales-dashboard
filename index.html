@@ -523,54 +523,58 @@ function render() {
 }
 
 function renderKPIs(m, mGoal, goalDiff, fl) {
-  // YOY: compute 2026 YTD/QTD/MTD through yesterday from live data
+  // YOY: single context-aware comparison based on active filter
   const raw = liveData || RAW;
+  const fq2 = $('f-quarter').value, fm2 = $('f-month').value;
   var sc = (fl === 'F') ? 'F' : (fl === 'M') ? 'M' : 'All';
   var yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
   var yd = yesterday.getDate(), ym = yesterday.getMonth() + 1;
-  var qStartMonth = ym <= 3 ? 1 : ym <= 6 ? 4 : ym <= 9 ? 7 : 10;
-  var MONTH_NAMES = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  function rev26(startMo, startDay, endMo, endDay) {
+  var MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var Q_MO = {Q1:[1,2,3],Q2:[4,5,6],Q3:[7,8,9],Q4:[10,11,12]};
+  // Determine which period to compare
+  var cardLabel, cur26, prev25, subLabel;
+  function rev26range(startMo, startDay, endMo, endDay) {
     return raw.filter(r => {
       if (!r.s) return false;
       if (sc !== 'All' && r.l !== sc) return false;
-      var rm = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(r.m)+1;
-      var rd = r.dy || 0;
+      var rm = MN.indexOf(r.m)+1, rd = r.dy||0;
       if (rm < startMo || rm > endMo) return false;
       if (rm === startMo && rd < startDay) return false;
       if (rm === endMo && rd > endDay) return false;
       return true;
     }).reduce((s,r)=>s+r.t,0);
   }
-  var ytd26 = rev26(1,1,ym,yd);
-  var qtd26 = rev26(qStartMonth,1,ym,yd);
-  var mtd26 = rev26(ym,1,ym,yd);
-  var yoy = getYOY(fl);
-  var ytdDiff = ytd26 - yoy.ytd25, qtdDiff = qtd26 - yoy.qtd25, mtdDiff = mtd26 - yoy.mtd25;
-  var ytdPct = yoy.ytd25 ? (ytdDiff/yoy.ytd25*100).toFixed(1)+'%' : '—';
-  var qtdPct = yoy.qtd25 ? (qtdDiff/yoy.qtd25*100).toFixed(1)+'%' : '—';
-  var mtdPct = yoy.mtd25 ? (mtdDiff/yoy.mtd25*100).toFixed(1)+'%' : '—';
+  if (fm2 !== 'All') {
+    // Specific month selected → MTD vs last year same month through same day
+    var moIdx = MN.indexOf(fm2)+1;
+    cur26 = rev26range(moIdx, 1, moIdx, yd);
+    prev25 = y25Sum(sc, moIdx, 1, moIdx, yd);
+    cardLabel = fm2 + ' vs Last Year';
+    subLabel = fm2 + ' 2026 vs ' + fm2 + ' 2025 (thru ' + fm2 + ' ' + yd + ')';
+  } else if (fq2 !== 'All') {
+    // Quarter selected → QTD vs last year same quarter through same day
+    var qMos = Q_MO[fq2];
+    var qStart = qMos[0], qEnd = Math.min(qMos[2], ym);
+    cur26 = rev26range(qStart, 1, qEnd, yd);
+    prev25 = y25Sum(sc, qStart, 1, qEnd, yd);
+    cardLabel = fq2 + ' vs Last Year';
+    subLabel = fq2 + ' 2026 vs ' + fq2 + ' 2025 (thru ' + MN[qEnd-1] + ' ' + yd + ')';
+  } else {
+    // All months → YTD vs last year through same day
+    cur26 = rev26range(1, 1, ym, yd);
+    prev25 = y25Sum(sc, 1, 1, ym, yd);
+    cardLabel = 'YTD vs Last Year';
+    subLabel = 'Jan–' + MN[ym-1] + ' ' + yd + ', 2026 vs 2025';
+  }
+  var diff = cur26 - prev25;
+  var diffPct = prev25 ? (diff/prev25*100).toFixed(1)+'%' : '—';
+  var diffCls = diff >= 0 ? '#16a34a' : '#dc2626';
   var yoyCard = `
     <div class="card">
-      <div class="card-label">vs Last Year</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-top:4px">
-        <div style="text-align:center">
-          <div style="font-size:9px;color:var(--gray);font-weight:700;text-transform:uppercase;letter-spacing:0.04em">YTD</div>
-          <div style="font-size:13px;font-weight:800;color:${ytdDiff>=0?'#16a34a':'#dc2626'}">${ytdDiff>=0?'+':''}${money(ytdDiff)}</div>
-          <div style="font-size:10px;color:${ytdDiff>=0?'#16a34a':'#dc2626'}">${ytdDiff>=0?'+':''}${ytdPct}</div>
-        </div>
-        <div style="text-align:center;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb">
-          <div style="font-size:9px;color:var(--gray);font-weight:700;text-transform:uppercase;letter-spacing:0.04em">QTD</div>
-          <div style="font-size:13px;font-weight:800;color:${qtdDiff>=0?'#16a34a':'#dc2626'}">${qtdDiff>=0?'+':''}${money(qtdDiff)}</div>
-          <div style="font-size:10px;color:${qtdDiff>=0?'#16a34a':'#dc2626'}">${qtdDiff>=0?'+':''}${qtdPct}</div>
-        </div>
-        <div style="text-align:center">
-          <div style="font-size:9px;color:var(--gray);font-weight:700;text-transform:uppercase;letter-spacing:0.04em">MTD</div>
-          <div style="font-size:13px;font-weight:800;color:${mtdDiff>=0?'#16a34a':'#dc2626'}">${mtdDiff>=0?'+':''}${money(mtdDiff)}</div>
-          <div style="font-size:10px;color:${mtdDiff>=0?'#16a34a':'#dc2626'}">${mtdDiff>=0?'+':''}${mtdPct}</div>
-        </div>
-      </div>
-      <div style="font-size:9px;color:var(--gray);margin-top:4px;text-align:center">vs same period 2025</div>
+      <div class="card-label">${cardLabel}</div>
+      <div class="card-value" style="color:${diffCls};font-size:20px">${diff>=0?'+':''}${money(diff)}</div>
+      <div class="card-sub" style="color:${diffCls};font-weight:700">${diff>=0?'+':''}${diffPct}</div>
+      <div style="font-size:9px;color:var(--gray);margin-top:2px">${subLabel}</div>
     </div>`;
   const kpis = [
     {label:'Total Revenue', value:money(m.revenue), sub:`${m.n} sales closed`},
