@@ -338,7 +338,61 @@ function getGoalLabel(fq, fm) {
   if (fq !== 'All') return fq + ' Goal';
   return 'Annual Goal';
 }
-const Y25_MONTHLY = { Jan:107915,Feb:121648,Mar:111518,Apr:0,May:0,Jun:0,Jul:0,Aug:0,Sep:0,Oct:0,Nov:0,Dec:0 };
+// ── 2025 DAILY SALES DATA (for YOY comparison) ──────────────────────────────
+const Y25 = {
+  1:{2:{F:5700.99,M:2845.99},4:{F:357.0,M:109.99},6:{F:1999.0,M:289.0},8:{F:23908.99,M:1249.0},9:{F:3199.0,M:178.99},10:{F:0,M:3558.99},13:{F:15345.99,M:198.0},14:{F:8991.99,M:3057.0},15:{F:2447.99,M:188.99},16:{F:1277.98,M:378.0},17:{F:700.0,M:0},18:{F:7493.0,M:2496.0},21:{F:3058.99,M:59.0},22:{F:1499.0,M:0},23:{F:1958.99,M:98.0},25:{F:438.99,M:49.99},27:{F:799.0,M:1149.0},28:{F:168.0,M:2716.99},29:{F:2700.0,M:0},30:{F:0,M:2714.99},31:{F:89.0,M:0}},
+  2:{1:{F:8371.99,M:2398.0},3:{F:7153.0,M:1531.0},4:{F:60.0,M:0},5:{F:0,M:2199.0},6:{F:13492.48,M:3146.99},7:{F:0,M:37.47},8:{F:4198.0,M:4499.0},10:{F:0,M:3929.0},11:{F:5496.0,M:0},12:{F:2282.99,M:0},13:{F:0,M:2668.0},14:{F:9929.98,M:1996.0},15:{F:5633.99,M:1397.0},17:{F:6623.97,M:2062.99},18:{F:0,M:4497.0},19:{F:429.0,M:5131.61},20:{F:0,M:389.0},21:{F:1538.0,M:138.0},22:{F:2148.0,M:5079.0},24:{F:2248.99,M:198.0},25:{F:1298.0,M:698.0},26:{F:0,M:2446.99},28:{F:-1900.01,M:1159.0}},
+  3:{1:{F:2195.0,M:999.0},3:{F:0,M:2998.0},4:{F:3396.99,M:4099.0},5:{F:2249.0,M:4099.0},6:{F:0,M:39.0},7:{F:5304.66,M:649.0},8:{F:2137.26,M:4247.98},10:{F:1634.0,M:150.0},11:{F:0,M:2830.7},12:{F:1449.0,M:0},13:{F:0,M:748.0},14:{F:9688.48,M:4378.14},15:{F:400.0,M:6285.99},17:{F:249.0,M:0},18:{F:2498.0,M:3446.0},19:{F:0,M:900.0},20:{F:11066.97,M:275.0},21:{F:3647.99,M:1799.0},22:{F:2995.0,M:1258.0},24:{F:79.0,M:2349.0},25:{F:3226.0,M:9359.0},26:{F:1524.0,M:110.0},27:{F:2858.99,M:0},28:{F:0,M:3899.04},29:{F:4417.98,M:0},31:{F:8287.0,M:149.0}},
+  4:{1:{F:0,M:799.0},2:{F:5408.0,M:3011.99},3:{F:5242.5,M:999.0},4:{F:1000.0,M:1437.99},5:{F:0,M:2469.0},7:{F:1098.0,M:475.0},8:{F:0,M:2017.99},9:{F:3658.99,M:3899.0},10:{F:0,M:-200.0},11:{F:2785.0,M:199.0},12:{F:8221.0,M:0},14:{F:9247.0,M:3557.99},15:{F:7403.99,M:3407.99},16:{F:11920.0,M:122.0},17:{F:0,M:6657.99},18:{F:2445.55,M:0},19:{F:3500.0,M:1897.0},21:{F:5158.66,M:819.0},22:{F:2399.0,M:2747.99},23:{F:70.0,M:70.0},24:{F:400.0,M:0},25:{F:7877.0,M:0},26:{F:1464.6,M:3667.0},28:{F:2443.98,M:1729.0},29:{F:2967.98,M:0},30:{F:6189.0,M:1073.0}},
+  5:{1:{F:898.0,M:324.0},2:{F:4127.98,M:1299.0},3:{F:3503.99,M:2956.0},5:{F:8649.0,M:3935.0},6:{F:2807.96,M:0},7:{F:5595.99,M:269.0},8:{F:22762.0,M:2137.0},9:{F:4695.99,M:1399.0},10:{F:5006.98,M:98.0},12:{F:727.98,M:4799.0},13:{F:2266.99,M:11444.0},14:{F:0,M:1303.04},15:{F:6336.0,M:49.0},16:{F:7536.98,M:300.0},17:{F:10748.98,M:6713.0},19:{F:0,M:4163.95},20:{F:0,M:179.0},21:{F:3223.96,M:39.0},22:{F:2995.0,M:1748.0},23:{F:16805.97,M:4923.0},24:{F:5850.0,M:14969.99},26:{F:14669.0,M:7135.19},27:{F:200.0,M:2633.99},29:{F:0,M:3449.0},30:{F:5503.0,M:8865.99},31:{F:10790.68,M:4157.99}},
+  6:{2:{F:3573.0,M:5795.99},3:{F:2077.0,M:257.0},4:{F:275.0,M:5796.0},5:{F:7658.0,M:399.0},6:{F:6724.0,M:4766.99},7:{F:1288.0,M:4198.0},9:{F:8153.99,M:849.0},10:{F:6590.0,M:89.0},11:{F:7807.0,M:0},12:{F:6626.96,M:469.0},13:{F:538.0,M:2734.99},14:{F:3963.0,M:4498.0},16:{F:5577.0,M:1886.99},17:{F:2267.99,M:749.0},18:{F:1396.0,M:5955.0},19:{F:6321.96,M:5037.0},20:{F:9822.99,M:7248.59},21:{F:15283.98,M:2000.0},23:{F:4292.99,M:1598.0},24:{F:6406.0,M:4256.99},25:{F:30.0,M:4461.53},26:{F:2678.0,M:409.0},27:{F:0,M:2677.98},28:{F:11233.97,M:3697.99},30:{F:9753.0,M:6998.0}},
+  7:{1:{F:15301.96,M:0},2:{F:4657.0,M:2766.99},3:{F:400.0,M:5935.98},5:{F:6627.99,M:6897.0},7:{F:9589.98,M:2425.0},8:{F:196.0,M:1299.0},9:{F:6095.0,M:69.99},10:{F:0,M:1983.02},11:{F:604.0,M:2623.0},12:{F:1558.99,M:7107.98},14:{F:800.0,M:20.0},15:{F:4226.0,M:1199.0},16:{F:71.0,M:4899.0},17:{F:836.0,M:0},18:{F:3688.0,M:0},19:{F:3235.0,M:2959.0},21:{F:0,M:3196.0},22:{F:5484.0,M:14294.0},23:{F:2767.99,M:258.0},24:{F:899.0,M:1098.98},25:{F:9672.0,M:0},26:{F:8012.05,M:1733.0},28:{F:7518.98,M:3693.0},29:{F:5362.0,M:300.0},30:{F:14163.09,M:3218.97},31:{F:4904.0,M:0}},
+  8:{1:{F:0,M:1587.99},2:{F:1236.97,M:3174.0},4:{F:2166.99,M:739.0},5:{F:329.0,M:12329.0},6:{F:200.0,M:2257.99},7:{F:4610.99,M:0},8:{F:949.0,M:4615.0},9:{F:12248.98,M:3194.99},11:{F:3793.0,M:125.0},12:{F:6994.0,M:2137.98},13:{F:188.0,M:436.0},14:{F:4339.0,M:1130.0},15:{F:21163.0,M:874.0},16:{F:4630.72,M:7694.0},18:{F:23350.98,M:79.0},19:{F:1109.0,M:0},20:{F:199.0,M:154.0},21:{F:768.99,M:787.0},22:{F:3946.0,M:1299.0},23:{F:8269.5,M:1152.99},25:{F:7790.97,M:8505.0},26:{F:708.99,M:25.0},27:{F:7968.99,M:2734.99},28:{F:10918.0,M:2047.99},29:{F:4655.99,M:6341.99},30:{F:3077.0,M:24878.0}},
+  9:{1:{F:7294.99,M:21958.99},2:{F:614.39,M:4596.0},3:{F:1748.0,M:199.0},4:{F:3696.0,M:4398.0},5:{F:8732.49,M:7356.99},6:{F:5832.0,M:0},8:{F:1058.99,M:11868.99},9:{F:7864.98,M:1456.0},10:{F:853.0,M:0},11:{F:1472.0,M:5283.64},12:{F:448.99,M:4028.54},13:{F:1299.0,M:3487.0},15:{F:3726.0,M:53.14},17:{F:0,M:899.0},18:{F:637.39,M:1099.0},19:{F:2183.0,M:1223.0},20:{F:4105.0,M:5341.59},22:{F:711.3,M:4820.0},23:{F:1623.0,M:598.0},24:{F:125.0,M:0},25:{F:600.0,M:266.0},26:{F:1584.0,M:1069.0},27:{F:2406.0,M:99.0},29:{F:5403.99,M:1099.0},30:{F:279.0,M:398.0}},
+  10:{2:{F:774.0,M:800.0},3:{F:3474.0,M:3448.0},4:{F:6535.0,M:6597.0},6:{F:2699.0,M:-69.99},7:{F:1599.0,M:0},8:{F:1754.98,M:0},9:{F:1758.99,M:0},10:{F:5667.99,M:0},11:{F:3948.0,M:267.0},13:{F:9452.99,M:3036.98},14:{F:1295.0,M:378.0},15:{F:5156.0,M:0},16:{F:400.0,M:2785.99},17:{F:5923.98,M:317.0},18:{F:1024.0,M:6234.98},20:{F:17656.95,M:0},21:{F:1991.99,M:0},22:{F:4531.0,M:3018.0},23:{F:662.5,M:-219.0},24:{F:2076.0,M:0},25:{F:21721.5,M:5148.99},27:{F:9881.99,M:2338.24},28:{F:1418.0,M:59.99},29:{F:1299.0,M:2048.0},30:{F:999.0,M:1077.99},31:{F:1468.99,M:1457.99}},
+  11:{1:{F:599.0,M:799.0},3:{F:449.0,M:3687.0},4:{F:2018.0,M:0},6:{F:2816.1,M:0},7:{F:2578.0,M:398.0},8:{F:3872.99,M:6140.0},10:{F:0,M:479.0},12:{F:-201.0,M:4356.99},13:{F:2099.0,M:2176.99},14:{F:7335.0,M:4657.99},15:{F:5067.99,M:2437.0},17:{F:358.0,M:1518.99},18:{F:1752.99,M:817.0},19:{F:10824.98,M:7164.99},20:{F:329.0,M:0},21:{F:968.99,M:2797.0},22:{F:8867.0,M:8271.0},24:{F:3597.0,M:697.0},25:{F:13111.94,M:2874.0},26:{F:9976.0,M:2497.0},28:{F:6079.75,M:7577.52},29:{F:3147.0,M:5507.99}},
+  12:{1:{F:8195.99,M:14801.98},2:{F:3482.99,M:0},3:{F:3966.98,M:659.0},4:{F:-1458.02,M:0},6:{F:2099.0,M:0},8:{F:698.0,M:0},9:{F:375.61,M:0},10:{F:0,M:675.94},11:{F:299.0,M:0},12:{F:0,M:150.0},13:{F:0,M:1667.99},15:{F:7614.0,M:498.0},16:{F:124.38,M:2977.0},17:{F:2316.0,M:399.0},18:{F:2387.99,M:2039.0},19:{F:591.0,M:2249.0},20:{F:879.0,M:278.99},22:{F:3799.0,M:129.0},23:{F:14644.0,M:6458.05},26:{F:7990.58,M:0},27:{F:0,M:4203.0},29:{F:269.0,M:4036.0},30:{F:5500.0,M:7497.0},31:{F:3598.0,M:2787.99}},
+};
+// Legacy monthly totals (used by Monthly tab)
+const Y25_MONTHLY = { Jan:103472,Feb:114605,Mar:124372,Apr:131757,May:234993,Jun:207167,Jul:184647,Aug:223913,Sep:145896,Oct:153895,Nov:150501,Dec:118879 };
+
+// ── YOY HELPER FUNCTIONS ─────────────────────────────────────────────────────
+// Sum Y25 daily data for a store (F, M, or both) over a date range
+// endDate is exclusive (we compare through yesterday)
+function y25Sum(storeFilter, startMonth, startDay, endMonth, endDay) {
+  // storeFilter: 'F', 'M', or 'All'
+  var total = 0;
+  for (var mo = startMonth; mo <= endMonth; mo++) {
+    var dayStart = (mo === startMonth) ? startDay : 1;
+    var dayEnd   = (mo === endMonth)   ? endDay   : 31;
+    var moData = Y25[mo] || {};
+    for (var d = dayStart; d <= dayEnd; d++) {
+      var dayData = moData[d];
+      if (!dayData) continue;
+      if (storeFilter === 'F') total += dayData.F || 0;
+      else if (storeFilter === 'M') total += dayData.M || 0;
+      else total += (dayData.F || 0) + (dayData.M || 0);
+    }
+  }
+  return total;
+}
+
+// Get YOY comparison data: {ytd25, qtd25, mtd25} all through yesterday
+function getYOY(locFilter) {
+  var sc = (locFilter === 'F') ? 'F' : (locFilter === 'M') ? 'M' : 'All';
+  // "Yesterday" = today minus 1 day
+  var yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+  var yd = yesterday.getDate(), ym = yesterday.getMonth() + 1; // 1-based month
+  // Quarter start month for current quarter
+  var qStartMonth = ym <= 3 ? 1 : ym <= 6 ? 4 : ym <= 9 ? 7 : 10;
+  // YTD: Jan 1 through yesterday
+  var ytd25 = y25Sum(sc, 1, 1, ym, yd);
+  // QTD: quarter start through yesterday
+  var qtd25 = y25Sum(sc, qStartMonth, 1, ym, yd);
+  // MTD: month start through yesterday
+  var mtd25 = y25Sum(sc, ym, 1, ym, yd);
+  return { ytd25, qtd25, mtd25 };
+}
 // ── Q1 2026 VERIFIED REFERENCE DATA (from BCM Sales Dashboard 2) ──────────────
 const Q1_REF = {
   totals: { revenue:321891, n:179, ups:220, cr:0.8136, at:1798, pr:0.6337, ba:0.0642, pi:0.1565, sh:0, css:0, reviews:20, quotes:29, accDollars:18162 },
@@ -454,7 +508,7 @@ function render() {
   const m = useQ1Ref ? Object.assign({}, Q1_REF.totals) : calc(rows);
   const goalDiff = m.revenue - mGoal;
 
-  renderKPIs(m, mGoal, goalDiff);
+  renderKPIs(m, mGoal, goalDiff, fl);
   renderAttach(m);
   renderLoc(rows);
   renderRevenueChart(rows);
@@ -468,17 +522,66 @@ function render() {
   if (tab === 'leaderboard' || $('tab-leaderboard').style.display !== 'none') renderLeaderboard(rows, useQ1Ref);
 }
 
-function renderKPIs(m, mGoal, goalDiff) {
-  const comp25 = Object.values(Y25_MONTHLY).reduce((a,b)=>a+b,0);
+function renderKPIs(m, mGoal, goalDiff, fl) {
+  // YOY: compute 2026 YTD/QTD/MTD through yesterday from live data
+  const raw = liveData || RAW;
+  var sc = (fl === 'F') ? 'F' : (fl === 'M') ? 'M' : 'All';
+  var yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
+  var yd = yesterday.getDate(), ym = yesterday.getMonth() + 1;
+  var qStartMonth = ym <= 3 ? 1 : ym <= 6 ? 4 : ym <= 9 ? 7 : 10;
+  var MONTH_NAMES = ['','Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  function rev26(startMo, startDay, endMo, endDay) {
+    return raw.filter(r => {
+      if (!r.s) return false;
+      if (sc !== 'All' && r.l !== sc) return false;
+      var rm = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(r.m)+1;
+      var rd = r.dy || 0;
+      if (rm < startMo || rm > endMo) return false;
+      if (rm === startMo && rd < startDay) return false;
+      if (rm === endMo && rd > endDay) return false;
+      return true;
+    }).reduce((s,r)=>s+r.t,0);
+  }
+  var ytd26 = rev26(1,1,ym,yd);
+  var qtd26 = rev26(qStartMonth,1,ym,yd);
+  var mtd26 = rev26(ym,1,ym,yd);
+  var yoy = getYOY(fl);
+  var ytdDiff = ytd26 - yoy.ytd25, qtdDiff = qtd26 - yoy.qtd25, mtdDiff = mtd26 - yoy.mtd25;
+  var ytdPct = yoy.ytd25 ? (ytdDiff/yoy.ytd25*100).toFixed(1)+'%' : '—';
+  var qtdPct = yoy.qtd25 ? (qtdDiff/yoy.qtd25*100).toFixed(1)+'%' : '—';
+  var mtdPct = yoy.mtd25 ? (mtdDiff/yoy.mtd25*100).toFixed(1)+'%' : '—';
+  var yoyCard = `
+    <div class="card">
+      <div class="card-label">vs Last Year</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px;margin-top:4px">
+        <div style="text-align:center">
+          <div style="font-size:9px;color:var(--gray);font-weight:700;text-transform:uppercase;letter-spacing:0.04em">YTD</div>
+          <div style="font-size:13px;font-weight:800;color:${ytdDiff>=0?'#16a34a':'#dc2626'}">${ytdDiff>=0?'+':''}${money(ytdDiff)}</div>
+          <div style="font-size:10px;color:${ytdDiff>=0?'#16a34a':'#dc2626'}">${ytdDiff>=0?'+':''}${ytdPct}</div>
+        </div>
+        <div style="text-align:center;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb">
+          <div style="font-size:9px;color:var(--gray);font-weight:700;text-transform:uppercase;letter-spacing:0.04em">QTD</div>
+          <div style="font-size:13px;font-weight:800;color:${qtdDiff>=0?'#16a34a':'#dc2626'}">${qtdDiff>=0?'+':''}${money(qtdDiff)}</div>
+          <div style="font-size:10px;color:${qtdDiff>=0?'#16a34a':'#dc2626'}">${qtdDiff>=0?'+':''}${qtdPct}</div>
+        </div>
+        <div style="text-align:center">
+          <div style="font-size:9px;color:var(--gray);font-weight:700;text-transform:uppercase;letter-spacing:0.04em">MTD</div>
+          <div style="font-size:13px;font-weight:800;color:${mtdDiff>=0?'#16a34a':'#dc2626'}">${mtdDiff>=0?'+':''}${money(mtdDiff)}</div>
+          <div style="font-size:10px;color:${mtdDiff>=0?'#16a34a':'#dc2626'}">${mtdDiff>=0?'+':''}${mtdPct}</div>
+        </div>
+      </div>
+      <div style="font-size:9px;color:var(--gray);margin-top:4px;text-align:center">vs same period 2025</div>
+    </div>`;
   const kpis = [
     {label:'Total Revenue', value:money(m.revenue), sub:`${m.n} sales closed`},
     {label:'vs Goal', value:(goalDiff>=0?'+':'')+money(goalDiff), sub:`Goal: ${money(mGoal)}`, cls:colorDiff(goalDiff)},
+    null, // YOY card inserted here
     {label:'Avg Ticket', value:money(m.at), sub:`${m.n} mattress sales`},
     {label:'Close Rate', value:pct(m.cr,0), sub:'Target: 81%', cls:colorPct(m.cr,0.81)},
     {label:'Accessory $', value:money(m.accDollars), sub:pct(m.accDollars/Math.max(m.revenue,1))+' of revenue'},
     {label:'Reviews', value:m.reviews, sub:`${m.quotes} quotes out`},
   ];
-  $('kpi-cards').innerHTML = kpis.map(k=>`
+  $('kpi-cards').innerHTML = kpis.map(k=> k===null ? yoyCard : `
     <div class="card">
       <div class="card-label">${k.label}</div>
       <div class="card-value ${k.cls||''}">${k.value}</div>
@@ -511,6 +614,7 @@ function renderAttach(m) {
 
 function renderLoc(rows) {
   const fq = $('f-quarter').value, fm = $('f-month').value;
+  const raw = liveData || RAW;
   const locs = [{key:'F',name:'📍 Foscoe',cls:'foscoe'},{key:'M',name:'📍 Mall',cls:'mall'}];
   $('loc-cards').innerHTML = locs.map(loc => {
     const m = calc(rows.filter(r=>r.l===loc.key));
@@ -526,6 +630,7 @@ function renderLoc(rows) {
         <div><div class="loc-metric-label">Sales</div><div class="loc-metric-val">${m.n}</div></div>
         <div><div class="loc-metric-label">${getGoalLabel(fq,fm)}</div><div class="loc-metric-val" style="color:var(--gray);font-size:14px">${money(storeGoal)}</div></div>
         <div><div class="loc-metric-label">vs Goal</div><div class="loc-metric-val ${goalDiffCls}" style="font-size:14px">${goalDiff>=0?'+':''}${money(goalDiff)} (${goalPct})</div></div>
+        <div>${(()=>{ const yoy=getYOY(loc.key); var yesterday=new Date(); yesterday.setDate(yesterday.getDate()-1); var yd=yesterday.getDate(),ym2=yesterday.getMonth()+1; var mtd25=yoy.mtd25; var mtd26=raw.filter(r=>r.s&&r.l===loc.key).reduce((s,r)=>{var rm=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].indexOf(r.m)+1;var rd=r.dy||0;return(rm===ym2&&rd<=yd)?s+r.t:s;},0); var diff=mtd26-mtd25; var diffPct=mtd25?(diff/mtd25*100).toFixed(1)+'%':'—'; var cls=diff>=0?'#16a34a':'#dc2626'; return '<div class="loc-metric-label">vs Last Year (MTD)</div><div class="loc-metric-val" style="font-size:13px;color:'+cls+'">'+(diff>=0?'+':'')+money(diff)+' ('+(diff>=0?'+':'')+diffPct+')</div>'; })()}</div>
         <div><div class="loc-metric-label">Close %</div><div class="loc-metric-val">${pct(m.cr,0)}</div></div>
         <div><div class="loc-metric-label">Avg Ticket</div><div class="loc-metric-val">${money(m.at)}</div></div>
         <div><div class="loc-metric-label">Pillow %</div><div class="loc-metric-val ${colorPct(m.pi,0.45)}">${pct(m.pi)}</div></div>
@@ -1177,8 +1282,8 @@ function parseCSV(csv) {
     if (!isSale && !isNonMatt && !isProspect) return;
     const rep = str(CI.rep), loc = str(CI.loc);
     if (!rep || !loc) return;
-    let month = '';
-    try { const d = new Date(str(CI.date)); if (!isNaN(d)) month = MO[String(d.getMonth()+1).padStart(2,'0')]||''; } catch(e) {}
+    let month = '', dayOfMonth = 0;
+    try { const d = new Date(str(CI.date)); if (!isNaN(d)) { month = MO[String(d.getMonth()+1).padStart(2,'0')]||''; dayOfMonth = d.getDate(); } } catch(e) {}
     if (!month) return;
     const ctRaw = (cols[CI.ctype]||'').replace(/"/g,'');
     let ct = '1';
@@ -1188,7 +1293,7 @@ function parseCSV(csv) {
     const isMatt = isSale;
     const bedroom = (cols[CI.bedroom]||'').replace(/"/g,'').toLowerCase();
     records.push({
-      m: month, r: rep==='Rebecca'?'Becca':rep, l: loc==='Foscoe'?'F':'M',
+      m: month, dy: dayOfMonth, r: rep==='Rebecca'?'Becca':rep, l: loc==='Foscoe'?'F':'M',
       s: (isMatt||isNonMatt)?1:0,
       t: isMatt ? num(CI.totalAmt) : (isNonMatt ? (num(CI.nmAmt)||num(CI.slAmt)||num(CI.totalAmt)) : 0),
       mt: isMatt?1:0,
