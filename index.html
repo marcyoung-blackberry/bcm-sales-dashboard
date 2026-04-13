@@ -1287,7 +1287,7 @@ function parseCSV(csv) {
     const rep = str(CI.rep);
     // col[2] is the primary location field; col[60] is the fallback (checkbox-style submissions)
     let loc = str(CI.loc);
-    if (!loc && cols.length > 60) loc = (cols[60]||'').trim();
+    if (!loc && cols.length > 61) loc = (cols[61]||'').trim();
     if (!rep || !loc) return;
     let month = '', dayOfMonth = 0;
     try { const d = new Date(str(CI.date)); if (!isNaN(d)) { month = MO[String(d.getMonth()+1).padStart(2,'0')]||''; dayOfMonth = d.getDate(); } } catch(e) {}
