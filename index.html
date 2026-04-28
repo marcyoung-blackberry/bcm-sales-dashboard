@@ -1280,7 +1280,7 @@ function parseCSV(csv) {
     const num = i => { const v = parseFloat((cols[i]||'').replace(/[$,]/g,'')); return isNaN(v) ? 0 : v; };
     const itype = str(CI.itype);
     // Accept all known interaction type variants (JotForm new format + legacy import format)
-    const isSale = itype === 'Mattress Sale';
+    const isSale = itype === 'Mattress Sale' || itype === 'Comfort Exchange';
     const isNonMatt = itype === 'Non-Mattress Sale Only' || itype === 'Non-Mattress Sale';
     const isProspect = itype === 'Prospect-No Sale' || itype === 'Walk-in (No Sale)' || itype === 'Quote Given';
     if (!isSale && !isNonMatt && !isProspect) return;
