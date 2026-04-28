@@ -438,11 +438,13 @@ function calc(rows) {
   const mattSales = sales.filter(r => r.mt), nm = mattSales.length;
   // Base% denominator: (master bedroom AND 1st homeowner) OR a base was sold
   const baseEligible = mattSales.filter(r => (r.ms && r.ct === '1') || r.b), nbe = baseEligible.length;
+  // Protector % denominator: exclude comfort exchanges (already had one) and website sales (no in-person opportunity)
+  const protEligible = mattSales.filter(r => !r.cx && !r.ws), npe = protEligible.length;
   return {
     ups, n, nm, revenue: rev,
     cr: n/ups, at: rev/n,
     pi: nm ? mattSales.filter(r=>r.pi).length/nm : 0,
-    pr: nm ? mattSales.filter(r=>r.pr).length/nm : 0,
+    pr: npe ? protEligible.filter(r=>r.pr).length/npe : 0,
     ba: nbe ? mattSales.filter(r=>r.b).length/nbe : 0,
     sh: nm ? mattSales.filter(r=>r.sh).length/nm : 0,
     css: nm ? mattSales.filter(r=>r.pr&&r.pi&&r.sh).length/nm : 0,
@@ -1298,12 +1300,16 @@ function parseCSV(csv) {
     else if (ctRaw.includes('Returning')) ct = 'R';
     else if (ctRaw.includes('Comeback')) ct = 'C';
     const isMatt = isSale;
+    const isExchange = itype === 'Comfort Exchange';  // excluded from protector % denominator
+    const isWebSale = ctRaw.includes('Website Sale');  // excluded from protector % denominator
     const bedroom = (cols[CI.bedroom]||'').replace(/"/g,'').toLowerCase();
     records.push({
       m: month, dy: dayOfMonth, r: rep==='Rebecca'?'Becca':rep, l: loc==='Foscoe'?'F':'M',
       s: (isMatt||isNonMatt)?1:0,
       t: isMatt ? num(CI.totalAmt) : (isNonMatt ? (num(CI.nmAmt)||num(CI.slAmt)||num(CI.totalAmt)) : 0),
       mt: isMatt?1:0,
+      cx: isExchange?1:0,   // comfort exchange flag
+      ws: isWebSale?1:0,    // website sale flag
       pr: num(CI.protQty)>0?1:0,
       pi: num(CI.pillQty)>0?1:0, sh: num(CI.shtQty)>0?1:0, b: num(CI.baseQty)>0?1:0,
       rv: str(CI.revComp).toLowerCase()==='yes'?1:0,
