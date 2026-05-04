@@ -1237,7 +1237,7 @@ function parseCSV(csv) {
     mattAmt:11,totalAmt:12,vendor:15,
     protQty:31,protAmt:32,protFull:33,
     pillQty:34,pillAmt:36,shtQty:37,shtAmt:38,
-    baseQty:39,baseAmt:41,revComp:46,nmAmt:48,slQty:49,slAmt:50,quote:58
+    baseQty:39,baseAmt:41,revComp:46,nmWhat:47,nmAmt:48,slQty:49,slAmt:50,quote:58
   };
 
   // Step 1: RFC 4180-compliant CSV parser (handles quoted fields with embedded commas/newlines)
@@ -1317,7 +1317,19 @@ function parseCSV(csv) {
       rv: str(CI.revComp).toLowerCase()==='yes'?1:0,
       ms: bedroom.includes('master')?1:0,
       q:  str(CI.quote).toLowerCase()==='yes'?1:0, ct,
-      ac: num(CI.protAmt)+num(CI.pillAmt)+num(CI.shtAmt),
+      ac: (() => {
+        // Dedicated fields (used on Mattress Sale invoices)
+        let a = num(CI.protAmt) + num(CI.pillAmt) + num(CI.shtAmt);
+        // Free-text AV field (used on Non-Mattress Sale Only invoices)
+        // Include AW dollar amount only when AV contains pillow/protector/sheet items
+        if (isNonMatt) {
+          const nmw = str(CI.nmWhat).toLowerCase();
+          if (nmw.includes('pillow') || nmw.includes('protector') || nmw.includes('sheet')) {
+            a += num(CI.nmAmt);
+          }
+        }
+        return a;
+      })(),
       ve: str(CI.vendor), un: num(CI.units)||1, ma: num(CI.mattAmt)
     });
   });
