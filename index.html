@@ -436,18 +436,19 @@ function calc(rows) {
   if (!n) return {ups,n,nm:0,revenue:0,cr:0,at:0,pi:0,pr:0,ba:0,sh:0,css:0,reviews:0,quotes:rows.filter(r=>r.q).length,accDollars:0,exchanges:0};
   const rev = sales.reduce((s,r) => s + r.t, 0);
   const mattSales = sales.filter(r => r.mt), nm = mattSales.length;
-  // Base% denominator: (master bedroom AND 1st homeowner) OR a base was sold
-  const baseEligible = mattSales.filter(r => (r.ms && r.ct === '1') || r.b), nbe = baseEligible.length;
-  // Protector % denominator: exclude comfort exchanges (already had one) and website sales (no in-person opportunity)
-  const protEligible = mattSales.filter(r => !r.cx && !r.ws), npe = protEligible.length;
+  // Attachment-eligible sales: exclude comfort exchanges (customer already bought accessories on original sale)
+  // and website sales (no in-person opportunity to present accessories)
+  const attSales = mattSales.filter(r => !r.cx && !r.ws), na = attSales.length;
+  // Base% denominator: attachment-eligible AND (1st homeowner + master bedroom OR base was sold)
+  const baseEligible = attSales.filter(r => (r.ms && r.ct === '1') || r.b), nbe = baseEligible.length;
   return {
     ups, n, nm, revenue: rev,
     cr: n/ups, at: rev/n,
-    pi: nm ? mattSales.filter(r=>r.pi).length/nm : 0,
-    pr: npe ? protEligible.filter(r=>r.pr).length/npe : 0,
-    ba: nbe ? mattSales.filter(r=>r.b).length/nbe : 0,
-    sh: nm ? mattSales.filter(r=>r.sh).length/nm : 0,
-    css: nm ? mattSales.filter(r=>r.pr&&r.pi&&r.sh).length/nm : 0,
+    pi: na ? attSales.filter(r=>r.pi).length/na : 0,
+    pr: na ? attSales.filter(r=>r.pr).length/na : 0,
+    ba: nbe ? attSales.filter(r=>r.b).length/nbe : 0,
+    sh: na ? attSales.filter(r=>r.sh).length/na : 0,
+    css: na ? attSales.filter(r=>r.pr&&r.pi&&r.sh).length/na : 0,
     reviews: rows.filter(r=>r.rv).length,
     quotes: rows.filter(r=>r.q).length,
     accDollars: sales.reduce((s,r) => s + (r.ac||0), 0),
@@ -1295,10 +1296,11 @@ function parseCSV(csv) {
     try { const d = new Date(str(CI.date)); if (!isNaN(d)) { month = MO[String(d.getMonth()+1).padStart(2,'0')]||''; dayOfMonth = d.getDate(); } } catch(e) {}
     if (!month) return;
     const ctRaw = (cols[CI.ctype]||'').replace(/"/g,'');
+    // 1st Homeowner always wins — JotForm allows multi-select so Returning/Comeback can co-exist with 1st Homeowner
     let ct = '1';
     if (ctRaw.includes('2nd')) ct = '2';
-    else if (ctRaw.includes('Returning')) ct = 'R';
-    else if (ctRaw.includes('Comeback')) ct = 'C';
+    else if (!ctRaw.includes('1st Homeowner') && ctRaw.includes('Returning')) ct = 'R';
+    else if (!ctRaw.includes('1st Homeowner') && ctRaw.includes('Comeback')) ct = 'C';
     const isMatt = isSale;
     const isExchange = itype === 'Comfort Exchange';  // excluded from protector % denominator
     const isWebSale = ctRaw.includes('Website Sale');  // excluded from protector % denominator
