@@ -434,7 +434,8 @@ function calc(rows) {
   const sales = rows.filter(r => r.s);
   const n = sales.length;
   if (!n) return {ups,n,nm:0,revenue:0,cr:0,at:0,pi:0,pr:0,ba:0,sh:0,css:0,reviews:0,quotes:rows.filter(r=>r.q).length,accDollars:0,exchanges:0};
-  const rev = sales.reduce((s,r) => s + r.t, 0);
+  const ceRev = rows.filter(r => r.cx).reduce((s,r) => s + r.t, 0);  // CE revenue counted separately
+  const rev = sales.reduce((s,r) => s + r.t, 0) + ceRev;
   const mattSales = sales.filter(r => r.mt), nm = mattSales.length;
   // Attachment-eligible sales: exclude comfort exchanges (customer already bought accessories on original sale)
   // and website sales (no in-person opportunity to present accessories)
