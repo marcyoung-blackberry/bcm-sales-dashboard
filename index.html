@@ -439,14 +439,16 @@ function calc(rows) {
   // Attachment-eligible sales: exclude comfort exchanges (customer already bought accessories on original sale)
   // and website sales (no in-person opportunity to present accessories)
   const attSales = mattSales.filter(r => !r.cx && !r.ws), na = attSales.length;
-  // Base% denominator: attachment-eligible AND (1st homeowner + master bedroom OR base was sold)
-  const baseEligible = attSales.filter(r => (r.ms && r.ct === '1') || r.b), nbe = baseEligible.length;
+  // Base% denominator: 1st homeowner + master bedroom mattress sales (excl. comfort exchanges)
+  // Base% numerator: eligible rows with base sold + ANY row with base sold (exception rule)
+  const baseEligible = attSales.filter(r => r.ms && r.ct === '1'), nbe = baseEligible.length;
+  const baseNum = attSales.filter(r => r.b).length;  // all AB sales count (exception rule)
   return {
     ups, n, nm, revenue: rev,
     cr: n/ups, at: rev/n,
     pi: na ? attSales.filter(r=>r.pi).length/na : 0,
     pr: na ? attSales.filter(r=>r.pr).length/na : 0,
-    ba: nbe ? attSales.filter(r=>r.b).length/nbe : 0,
+    ba: nbe ? baseNum/nbe : 0,
     sh: na ? attSales.filter(r=>r.sh).length/na : 0,
     css: na ? attSales.filter(r=>r.pr&&r.pi&&r.sh).length/na : 0,
     reviews: rows.filter(r=>r.rv).length,
@@ -507,8 +509,8 @@ function render() {
   const mGoal = getGoal(fq, fm, fl, fr);
 
   // Use Q1 verified reference data when Q1 filter is active (no location/rep sub-filter)
-  const useQ1Ref = fq === 'Q1' && fl === 'All' && fr === 'All';
-  const m = useQ1Ref ? Object.assign({}, Q1_REF.totals) : calc(rows);
+  const useQ1Ref = false;  // Always use live data — Q1_REF hardcoded override removed
+  const m = calc(rows);
   const goalDiff = m.revenue - mGoal;
 
   renderKPIs(m, mGoal, goalDiff, fl);
@@ -518,11 +520,11 @@ function render() {
   renderRepSummary(rows);
 
   const tab = document.querySelector('.tab.active')?.dataset?.tab || 'overview';
-  if (tab === 'reps' || $('tab-reps').style.display !== 'none') renderReps(rows, useQ1Ref);
+  if (tab === 'reps' || $('tab-reps').style.display !== 'none') renderReps(rows, false);
   if (tab === 'monthly' || $('tab-monthly').style.display !== 'none') renderMonthly();
   if (tab === 'vendors' || $('tab-vendors').style.display !== 'none') renderVendors(rows);
   if (tab === 'exchanges' || $('tab-exchanges').style.display !== 'none') renderExchanges(rows);
-  if (tab === 'leaderboard' || $('tab-leaderboard').style.display !== 'none') renderLeaderboard(rows, useQ1Ref);
+  if (tab === 'leaderboard' || $('tab-leaderboard').style.display !== 'none') renderLeaderboard(rows, false);
 }
 
 function renderKPIs(m, mGoal, goalDiff, fl) {
@@ -1283,7 +1285,7 @@ function parseCSV(csv) {
     const num = i => { const v = parseFloat((cols[i]||'').replace(/[$,]/g,'')); return isNaN(v) ? 0 : v; };
     const itype = str(CI.itype);
     // Accept all known interaction type variants (JotForm new format + legacy import format)
-    const isSale = itype === 'Mattress Sale' || itype === 'Comfort Exchange';
+    const isSale = itype === 'Mattress Sale';  // Comfort Exchanges excluded from sales count
     const isNonMatt = itype === 'Non-Mattress Sale Only' || itype === 'Non-Mattress Sale';
     const isProspect = itype === 'Prospect-No Sale' || itype === 'Walk-in (No Sale)' || itype === 'Quote Given';
     if (!isSale && !isNonMatt && !isProspect) return;
@@ -1302,7 +1304,7 @@ function parseCSV(csv) {
     else if (!ctRaw.includes('1st Homeowner') && ctRaw.includes('Returning')) ct = 'R';
     else if (!ctRaw.includes('1st Homeowner') && ctRaw.includes('Comeback')) ct = 'C';
     const isMatt = isSale;
-    const isExchange = itype === 'Comfort Exchange';  // excluded from protector % denominator
+    const isExchange = itype === 'Comfort Exchange';  // excluded from all sales metrics
     const isWebSale = ctRaw.includes('Website Sale');  // excluded from protector % denominator
     const bedroom = (cols[CI.bedroom]||'').replace(/"/g,'').toLowerCase();
     records.push({
@@ -1312,7 +1314,7 @@ function parseCSV(csv) {
       mt: isMatt?1:0,
       cx: isExchange?1:0,   // comfort exchange flag
       ws: isWebSale?1:0,    // website sale flag
-      pr: num(CI.protQty)>0?1:0,
+      pr: (num(CI.protQty)>0 && (str(CI.protFull).toLowerCase().includes('yes')))?1:0,
       pi: num(CI.pillQty)>0?1:0, sh: num(CI.shtQty)>0?1:0, b: num(CI.baseQty)>0?1:0,
       rv: str(CI.revComp).toLowerCase()==='yes'?1:0,
       ms: bedroom.includes('master')?1:0,
