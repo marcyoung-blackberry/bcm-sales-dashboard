@@ -1312,7 +1312,7 @@ function parseCSV(csv) {
     records.push({
       m: month, dy: dayOfMonth, r: rep==='Rebecca'?'Becca':rep, l: loc==='Foscoe'?'F':'M',
       s: (isMatt||isNonMatt)?1:0,
-      t: isMatt ? num(CI.totalAmt) : (isNonMatt ? (num(CI.nmAmt) + num(CI.slAmt)) : (isExchange ? num(CI.totalAmt) : 0)),  // Mattress=ColM, NonMatt=AW+AY (mutually exclusive: AW=non-matt items, AY=Stressless only), CE=ColM
+      t: isMatt ? num(CI.totalAmt) : (isNonMatt ? (num(CI.nmAmt) + num(CI.slAmt) + num(CI.baseAmt)) : (isExchange ? num(CI.totalAmt) : 0)),  // Mattress=ColM, NonMatt=AW+AY+AP (AW=non-matt items, AY=Stressless, AP=AB standalone), CE=ColM
       mt: isMatt?1:0,
       cx: isExchange?1:0,   // comfort exchange flag
       ws: isWebSale?1:0,    // website sale flag
