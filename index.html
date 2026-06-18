@@ -1285,10 +1285,11 @@ function parseCSV(csv) {
     const num = i => { const v = parseFloat((cols[i]||'').replace(/[$,]/g,'')); return isNaN(v) ? 0 : v; };
     const itype = str(CI.itype);
     // Accept all known interaction type variants (JotForm new format + legacy import format)
-    const isSale = itype === 'Mattress Sale';  // Comfort Exchanges excluded from sales count
-    const isNonMatt = itype === 'Non-Mattress Sale Only' || itype === 'Non-Mattress Sale';
+    const isSale = itype === 'Mattress Sale';
+    const isNonMatt = itype === 'Non-Mattress Sale Only' || itype === 'Non-Mattress sale only' || itype === 'Non-Mattress Sale';
+    const isExchangeType = itype === 'Comfort Exchange';  // revenue counted, excluded from attachment metrics
     const isProspect = itype === 'Prospect-No Sale' || itype === 'Walk-in (No Sale)' || itype === 'Quote Given';
-    if (!isSale && !isNonMatt && !isProspect) return;
+    if (!isSale && !isNonMatt && !isExchangeType && !isProspect) return;
     const rep = str(CI.rep);
     // col[2] is the primary location field; col[60] is the fallback (checkbox-style submissions)
     let loc = str(CI.loc);
@@ -1304,13 +1305,13 @@ function parseCSV(csv) {
     else if (!ctRaw.includes('1st Homeowner') && ctRaw.includes('Returning')) ct = 'R';
     else if (!ctRaw.includes('1st Homeowner') && ctRaw.includes('Comeback')) ct = 'C';
     const isMatt = isSale;
-    const isExchange = itype === 'Comfort Exchange';  // excluded from all sales metrics
+    const isExchange = isExchangeType;  // revenue counted, excluded from attachment metrics
     const isWebSale = ctRaw.includes('Website Sale');  // excluded from protector % denominator
     const bedroom = (cols[CI.bedroom]||'').replace(/"/g,'').toLowerCase();
     records.push({
       m: month, dy: dayOfMonth, r: rep==='Rebecca'?'Becca':rep, l: loc==='Foscoe'?'F':'M',
       s: (isMatt||isNonMatt)?1:0,
-      t: isMatt ? num(CI.totalAmt) : (isNonMatt ? (num(CI.nmAmt) + num(CI.slAmt)) : 0),  // AW (non-matt items) + AY (Stressless) combined
+      t: isMatt ? num(CI.totalAmt) : (isNonMatt ? (num(CI.nmAmt) + num(CI.slAmt)) : (isExchange ? num(CI.totalAmt) : 0)),  // Mattress=ColM, NonMatt=AW+AY, CE=ColM for revenue
       mt: isMatt?1:0,
       cx: isExchange?1:0,   // comfort exchange flag
       ws: isWebSale?1:0,    // website sale flag
