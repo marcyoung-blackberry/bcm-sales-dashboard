@@ -440,20 +440,26 @@ function calc(rows) {
   // Attachment-eligible sales: exclude comfort exchanges (customer already bought accessories on original sale)
   // and website sales (no in-person opportunity to present accessories)
   const attSales = mattSales.filter(r => !r.cx && !r.ws), na = attSales.length;
-  // Base% denominator: 1st homeowner + master bedroom mattress sales (excl. comfort exchanges)
-  // Base% numerator: eligible rows with base sold + ANY row with base sold (exception rule)
+  // Base% formula (corrected):
+  //   Standard opportunity = 1st Homeowner + Master Bedroom mattress sale (excl. comfort exchanges)
+  //   Exception = any sale (mattress, non-mattress, website) where an AB was sold but falls outside standard criteria
+  //   Exceptions add to BOTH numerator AND denominator
+  //   AB % = (stdSold + exceptions) / (stdDenom + exceptions)
   const baseEligible = attSales.filter(r => r.ms && r.ct === '1'), nbe = baseEligible.length;
-  // Numerator: eligible rows where base sold (standard) + non-eligible rows where base sold (exceptions)
-  // Each sale counts as 1 regardless of qty (split king = 1 opportunity)
   const baseStandard = baseEligible.filter(r => r.b).length;
-  const baseException = attSales.filter(r => r.b && !(r.ms && r.ct === '1')).length;
-  const baseNum = baseStandard + baseException;  // standard + exception rule
+  // Exceptions: AB sold on any row NOT in standard criteria (2nd HO, non-master, non-mattress AB sale, website AB sale)
+  // Include all rows in the filtered set plus non-mattress rows that have an AB
+  const baseExcMatt = attSales.filter(r => r.b && !(r.ms && r.ct === '1')).length;  // mattress sales outside std
+  const baseExcNonMatt = rows.filter(r => r.b && (!r.mt || r.ws) && !r.cx).length;  // non-mattress AB sales (standalone AB, website AB)
+  const baseException = baseExcMatt + baseExcNonMatt;
+  const baseNum = baseStandard + baseException;
+  const baseDenom = nbe + baseException;  // exceptions expand the denominator
   return {
     ups, n, nm, revenue: rev,
     cr: n/ups, at: rev/n,
     pi: na ? attSales.filter(r=>r.pi).length/na : 0,
     pr: na ? attSales.filter(r=>r.pr).length/na : 0,
-    ba: nbe ? baseNum/nbe : 0,
+    ba: baseDenom ? baseNum/baseDenom : 0,
     sh: na ? attSales.filter(r=>r.sh).length/na : 0,
     css: na ? attSales.filter(r=>r.pr&&r.pi&&r.sh).length/na : 0,
     reviews: rows.filter(r=>r.rv).length,
