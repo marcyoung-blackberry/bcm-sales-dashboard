@@ -443,7 +443,11 @@ function calc(rows) {
   // Base% denominator: 1st homeowner + master bedroom mattress sales (excl. comfort exchanges)
   // Base% numerator: eligible rows with base sold + ANY row with base sold (exception rule)
   const baseEligible = attSales.filter(r => r.ms && r.ct === '1'), nbe = baseEligible.length;
-  const baseNum = attSales.filter(r => r.b).length;  // all AB sales count (exception rule)
+  // Numerator: eligible rows where base sold (standard) + non-eligible rows where base sold (exceptions)
+  // Each sale counts as 1 regardless of qty (split king = 1 opportunity)
+  const baseStandard = baseEligible.filter(r => r.b).length;
+  const baseException = attSales.filter(r => r.b && !(r.ms && r.ct === '1')).length;
+  const baseNum = baseStandard + baseException;  // standard + exception rule
   return {
     ups, n, nm, revenue: rev,
     cr: n/ups, at: rev/n,
