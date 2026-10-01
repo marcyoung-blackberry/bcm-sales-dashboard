@@ -182,13 +182,52 @@ tr:nth-child(even) td { background: #f9fafb; }
 .race-store-grid .race-panel:last-child { border-top:3px solid var(--gold); }
 .race-pace-good { color:var(--green) !important; }
 .race-pace-bad { color:var(--red) !important; }
+
+/* Historic $2M milestone + live-momentum effects */
+.race-history { margin:18px auto 8px; max-width:760px; padding:14px 18px; border-radius:12px; text-align:center; background:rgba(235,146,34,.12); border:1px solid rgba(235,146,34,.38); }
+.race-history-label { font-size:10px; font-weight:900; letter-spacing:.14em; color:#fde68a; }
+.race-history-value { font-size:clamp(26px,4vw,40px); font-weight:900; color:white; margin-top:3px; letter-spacing:-.03em; }
+.race-history-sub { font-size:11px; color:#cbd5e1; margin-top:4px; }
+.race-history.achieved { background:linear-gradient(135deg,rgba(235,146,34,.30),rgba(250,204,21,.12)); border-color:#f59e0b; box-shadow:0 0 0 2px rgba(245,158,11,.10); }
+.race-history.achieved .race-history-label,.race-history.achieved .race-history-value { color:#fde68a; }
+.race-ultimate-label { text-align:center; margin-top:20px; font-size:9px; color:#94a3b8; font-weight:800; letter-spacing:.14em; text-transform:uppercase; }
+.race-sound-row { display:flex; justify-content:center; margin-top:12px; }
+.race-sound-btn { background:rgba(255,255,255,.10); color:#e2e8f0; border:1px solid rgba(255,255,255,.25); border-radius:999px; padding:7px 13px; font-size:10px; font-weight:800; cursor:pointer; }
+.race-sound-btn.enabled { background:rgba(22,163,74,.18); border-color:rgba(74,222,128,.45); color:#bbf7d0; }
+.race-today-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+.race-today-card { background:white; border-radius:12px; padding:16px; text-align:center; box-shadow:0 1px 4px rgba(11,46,124,.08); border-top:3px solid var(--navy); }
+.race-today-card.win { border-top-color:var(--green); }
+.race-today-card.chase { border-top-color:var(--gold); }
+.race-today-value { font-size:26px; font-weight:900; color:var(--navy); margin-top:5px; }
+.race-to-go.sale-pulse { animation:racePulse .9s ease; }
+@keyframes racePulse { 0%{transform:scale(1)} 35%{transform:scale(1.06);color:#fde68a} 100%{transform:scale(1)} }
+
+.race-sale-toast { position:fixed; inset:0; z-index:1000; display:none; align-items:center; justify-content:center; background:rgba(11,46,124,.78); backdrop-filter:blur(4px); }
+.race-sale-toast.show { display:flex; animation:raceFadeIn .2s ease; }
+.race-sale-card { width:min(560px,88vw); background:white; border-radius:22px; padding:34px 28px; text-align:center; box-shadow:0 24px 70px rgba(0,0,0,.28); }
+.race-sale-kicker { color:var(--green); font-weight:900; font-size:13px; letter-spacing:.16em; }
+.race-sale-amount { color:var(--navy); font-weight:900; font-size:clamp(46px,9vw,76px); letter-spacing:-.05em; line-height:1.05; margin:8px 0; }
+.race-sale-newtotal { font-size:22px; font-weight:900; color:var(--gold); }
+.race-sale-msg { color:var(--gray); font-size:12px; margin-top:8px; }
+
+.race-celebration { position:fixed; inset:0; z-index:1100; display:none; align-items:center; justify-content:center; overflow:hidden; background:radial-gradient(circle at center,#163a72 0%,#071d4f 70%); color:white; text-align:center; }
+.race-celebration.show { display:flex; animation:raceFadeIn .25s ease; }
+.race-celebration-inner { position:relative; z-index:2; width:min(900px,92vw); padding:30px; }
+.race-celebration-kicker { color:#fde68a; font-size:14px; font-weight:900; letter-spacing:.20em; }
+.race-celebration-number { font-size:clamp(62px,13vw,140px); line-height:.95; color:#fbbf24; font-weight:900; letter-spacing:-.07em; margin:16px 0 10px; }
+.race-celebration-title { font-size:clamp(30px,6vw,62px); font-weight:900; }
+.race-celebration-sub { color:#e2e8f0; font-size:clamp(15px,2.2vw,22px); margin-top:12px; line-height:1.45; }
+.race-celebration-close { margin-top:26px; background:white; color:var(--navy); border:0; border-radius:999px; padding:10px 18px; font-weight:900; cursor:pointer; }
+.race-confetti { position:absolute; width:10px; height:18px; top:-24px; opacity:.95; animation:raceConfetti 3.8s linear forwards; }
+@keyframes raceConfetti { to { transform:translate3d(var(--x),110vh,0) rotate(760deg); } }
+@keyframes raceFadeIn { from{opacity:0} to{opacity:1} }
 @media (max-width: 800px) {
-  .race-stat-grid { grid-template-columns:repeat(2,1fr); }
+  .race-stat-grid, .race-today-grid { grid-template-columns:repeat(2,1fr); }
   .race-month-grid { grid-template-columns:1fr; }
 }
 @media (max-width: 520px) {
   .race-hero { padding:22px 16px 18px; border-radius:12px; }
-  .race-stat-grid, .race-store-grid { grid-template-columns:1fr; }
+  .race-stat-grid, .race-today-grid, .race-store-grid { grid-template-columns:1fr; }
   .race-progress-meta { font-size:10px; }
   .race-milestone { font-size:8px; }
 }
@@ -281,6 +320,18 @@ tr:nth-child(even) td { background: #f9fafb; }
       <div class="race-hero">
         <div class="race-kicker">Q4 2026 Team Scoreboard</div>
         <div class="race-title">Race to $2.35 Million</div>
+
+        <div class="race-history" id="race-history">
+          <div class="race-history-label" id="race-history-label">FIRST $2 MILLION YEAR</div>
+          <div class="race-history-value" id="race-history-value">$— TO HISTORY</div>
+          <div class="race-history-sub" id="race-history-sub">A milestone Blackberry Creek Mattress has chased for years.</div>
+        </div>
+
+        <div class="race-sound-row">
+          <button class="race-sound-btn" id="race-sound-btn" onclick="enableRaceSound()">🔔 Enable sale sounds</button>
+        </div>
+
+        <div class="race-ultimate-label">Ultimate 2026 Stretch Finish</div>
         <div class="race-to-go" id="race-to-go">$—</div>
         <div class="race-to-go-label">TO GO</div>
         <div class="race-progress-meta">
@@ -294,6 +345,30 @@ tr:nth-child(even) td { background: #f9fafb; }
           <span>Q4 start: <strong id="race-q4-start">$—</strong></span>
           <span>Q4 sales: <strong id="race-q4-actual">$—</strong></span>
           <span>Original $2.10M goal: <strong id="race-original-goal">IN PROGRESS</strong></span>
+        </div>
+      </div>
+
+      <div class="race-section-title">Today's Momentum</div>
+      <div class="race-today-grid">
+        <div class="race-today-card" id="race-today-sales-card">
+          <div class="race-stat-label">Sales Today</div>
+          <div class="race-today-value" id="race-today-sales">$—</div>
+          <div class="race-stat-sub" id="race-today-count">— sales entered</div>
+        </div>
+        <div class="race-today-card">
+          <div class="race-stat-label">Today's Target</div>
+          <div class="race-today-value" id="race-today-target">$—</div>
+          <div class="race-stat-sub">What today needs to contribute</div>
+        </div>
+        <div class="race-today-card" id="race-today-status-card">
+          <div class="race-stat-label">Today vs Target</div>
+          <div class="race-today-value" id="race-today-status">—</div>
+          <div class="race-stat-sub" id="race-today-status-sub">Keep moving the board</div>
+        </div>
+        <div class="race-today-card">
+          <div class="race-stat-label">To $2 Million</div>
+          <div class="race-today-value" id="race-to-2m">$—</div>
+          <div class="race-stat-sub" id="race-to-2m-sub">First time in BCM history</div>
         </div>
       </div>
 
@@ -400,6 +475,25 @@ tr:nth-child(even) td { background: #f9fafb; }
     <div id="leaderboard-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px"></div>
   </div>
 
+</div>
+
+<div class="race-sale-toast" id="race-sale-toast" aria-live="polite">
+  <div class="race-sale-card">
+    <div class="race-sale-kicker" id="race-sale-kicker">NEW SALE</div>
+    <div class="race-sale-amount" id="race-sale-amount">+$0</div>
+    <div class="race-sale-newtotal" id="race-sale-newtotal">$0 TO GO</div>
+    <div class="race-sale-msg" id="race-sale-msg">That sale moved the whole team closer.</div>
+  </div>
+</div>
+
+<div class="race-celebration" id="race-celebration">
+  <div class="race-celebration-inner">
+    <div class="race-celebration-kicker" id="race-celebration-kicker">BLACKBERRY CREEK MATTRESS</div>
+    <div class="race-celebration-number" id="race-celebration-number">$2,000,000</div>
+    <div class="race-celebration-title" id="race-celebration-title">HISTORY MADE.</div>
+    <div class="race-celebration-sub" id="race-celebration-sub">First $2 million year in company history.</div>
+    <button class="race-celebration-close" onclick="closeRaceCelebration()">Back to the race</button>
+  </div>
 </div>
 
 <script>
@@ -523,10 +617,17 @@ let liveData = null;
 let charts = {};
 
 const RACE_ANNUAL_GOAL = 2350000;
+const RACE_HISTORY_GOAL = 2000000;
 const RACE_ORIGINAL_GOAL = 2100000;
 const RACE_MONTH_STRETCH = { Oct:190000, Nov:195000, Dec:140000 };
 const RACE_STORE_STRETCH = { F:310000, M:215000 };
 const RACE_HOLIDAYS = new Set(['2026-11-26','2026-12-24','2026-12-25']);
+
+let raceSoundEnabled = false;
+let raceAudioContext = null;
+let lastLiveRaceRevenue = null;
+let lastLiveRaceSalesCount = null;
+let saleToastTimer = null;
 
 function raceRevenue(row) {
   return Number.isFinite(row.rr) ? row.rr : (Number.isFinite(row.t) ? row.t : 0);
@@ -548,6 +649,121 @@ function countRaceSellingDays(start, end) {
   }
   return n;
 }
+function enableRaceSound() {
+  try {
+    if (!raceAudioContext) raceAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+    raceAudioContext.resume();
+    raceSoundEnabled = !raceSoundEnabled;
+  } catch(e) {
+    raceSoundEnabled = false;
+  }
+  const btn = $('race-sound-btn');
+  if (btn) {
+    btn.classList.toggle('enabled', raceSoundEnabled);
+    btn.textContent = raceSoundEnabled ? '🔔 Sale sounds on' : '🔕 Sale sounds off';
+  }
+  if (raceSoundEnabled) playRaceChime('sale');
+}
+function playRaceChime(kind='sale') {
+  if (!raceSoundEnabled || !raceAudioContext) return;
+  try {
+    const ctx = raceAudioContext;
+    const now = ctx.currentTime;
+    const tones = kind==='history' ? [523.25,659.25,783.99,1046.5] :
+                  kind==='goal' ? [659.25,783.99,987.77] : [880,1320];
+    tones.forEach((freq,i)=>{
+      const o=ctx.createOscillator(), g=ctx.createGain();
+      o.type = kind==='sale' ? 'sine' : 'triangle';
+      o.frequency.value=freq;
+      const start=now+i*(kind==='sale'?0.11:0.16);
+      g.gain.setValueAtTime(0.0001,start);
+      g.gain.exponentialRampToValueAtTime(kind==='sale'?0.11:0.16,start+0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001,start+(kind==='sale'?0.22:0.34));
+      o.connect(g); g.connect(ctx.destination); o.start(start); o.stop(start+0.4);
+    });
+  } catch(e) {}
+}
+function animateRaceCountdown(oldRevenue,newRevenue) {
+  const el=$('race-to-go');
+  if(!el || newRevenue<=oldRevenue) return;
+  const from=Math.max(0,RACE_ANNUAL_GOAL-oldRevenue);
+  const to=Math.max(0,RACE_ANNUAL_GOAL-newRevenue);
+  const duration=1100, started=performance.now();
+  el.classList.remove('sale-pulse'); void el.offsetWidth; el.classList.add('sale-pulse');
+  function step(ts){
+    const p=Math.min(1,(ts-started)/duration);
+    const eased=1-Math.pow(1-p,3);
+    el.textContent=money(from+(to-from)*eased);
+    if(p<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+function showNewSale(delta,newRevenue,count=1) {
+  const overlay=$('race-sale-toast');
+  if(!overlay || delta<=0) return;
+  $('race-sale-kicker').textContent = count>1 ? count+' NEW SALES' : 'NEW SALE';
+  $('race-sale-amount').textContent = '+'+money(delta);
+  $('race-sale-newtotal').textContent = money(Math.max(0,RACE_ANNUAL_GOAL-newRevenue))+' TO $2.35M';
+  const historyLeft=Math.max(0,RACE_HISTORY_GOAL-newRevenue);
+  $('race-sale-msg').textContent = newRevenue < RACE_HISTORY_GOAL
+    ? 'Now only '+money(historyLeft)+' from the first $2 million year.'
+    : 'History is already made. Keep pushing the stretch goal.';
+  overlay.classList.add('show');
+  playRaceChime('sale');
+  clearTimeout(saleToastTimer);
+  saleToastTimer=setTimeout(()=>overlay.classList.remove('show'),5200);
+}
+function closeRaceCelebration() {
+  const el=$('race-celebration');
+  if(el) el.classList.remove('show');
+  document.querySelectorAll('.race-confetti').forEach(x=>x.remove());
+}
+function launchConfetti() {
+  const host=$('race-celebration');
+  if(!host) return;
+  const colors=['#fbbf24','#ffffff','#60a5fa','#fb923c','#86efac'];
+  for(let i=0;i<90;i++){
+    const p=document.createElement('i');
+    p.className='race-confetti';
+    p.style.left=(Math.random()*100)+'vw';
+    p.style.background=colors[i%colors.length];
+    p.style.setProperty('--x',((Math.random()-.5)*340)+'px');
+    p.style.animationDelay=(Math.random()*1.1)+'s';
+    p.style.animationDuration=(2.8+Math.random()*2)+'s';
+    host.appendChild(p);
+  }
+}
+function showRaceCelebration(type) {
+  const el=$('race-celebration');
+  if(!el) return;
+  if(type==='history'){
+    $('race-celebration-kicker').textContent='BLACKBERRY CREEK MATTRESS';
+    $('race-celebration-number').textContent='$2,000,000';
+    $('race-celebration-title').textContent='HISTORY MADE.';
+    $('race-celebration-sub').textContent='For the first time ever, Blackberry Creek Mattress has reached $2 million in annual sales. Years of chasing it. We did it.';
+    playRaceChime('history');
+  } else if(type==='original'){
+    $('race-celebration-kicker').textContent='2026 ORIGINAL GOAL';
+    $('race-celebration-number').textContent='$2,100,000';
+    $('race-celebration-title').textContent='GOAL ACHIEVED.';
+    $('race-celebration-sub').textContent='The original 2026 goal is officially on the board. Now finish the race to $2.35 million.';
+    playRaceChime('goal');
+  } else {
+    $('race-celebration-kicker').textContent='2026 STRETCH GOAL';
+    $('race-celebration-number').textContent='$2,350,000';
+    $('race-celebration-title').textContent='WE DID IT.';
+    $('race-celebration-sub').textContent='Blackberry Creek Mattress has reached the $2.35 million stretch finish.';
+    playRaceChime('history');
+  }
+  el.classList.add('show');
+  launchConfetti();
+}
+function checkRaceMilestones(oldRevenue,newRevenue) {
+  if(oldRevenue < RACE_HISTORY_GOAL && newRevenue >= RACE_HISTORY_GOAL) return showRaceCelebration('history');
+  if(oldRevenue < RACE_ORIGINAL_GOAL && newRevenue >= RACE_ORIGINAL_GOAL) return showRaceCelebration('original');
+  if(oldRevenue < RACE_ANNUAL_GOAL && newRevenue >= RACE_ANNUAL_GOAL) return showRaceCelebration('stretch');
+}
+
 function renderRace() {
   const raw = liveData || RAW;
   const q4Months = new Set(['Oct','Nov','Dec']);
@@ -557,12 +773,15 @@ function renderRace() {
   const q4Start = currentYtd - q4Actual;
   const q4Target = Math.max(0, RACE_ANNUAL_GOAL - q4Start);
   const toGo = Math.max(0, RACE_ANNUAL_GOAL - currentYtd);
+  const toHistory = Math.max(0, RACE_HISTORY_GOAL - currentYtd);
   const progress = Math.max(0, Math.min(1, currentYtd / RACE_ANNUAL_GOAL));
 
   const q4StartDate = new Date(2026,9,1,12);
   const q4EndDate = new Date(2026,11,31,12);
   const todayNow = new Date();
   const today = new Date(todayNow.getFullYear(), todayNow.getMonth(), todayNow.getDate(), 12);
+  const todayKey = raceDateKey(today);
+  const currentMonth = MONTHS[today.getMonth()];
   const totalDays = countRaceSellingDays(q4StartDate, q4EndDate);
   const remainingStart = today < q4StartDate ? q4StartDate : today;
   const daysLeft = today > q4EndDate ? 0 : countRaceSellingDays(remainingStart, q4EndDate);
@@ -576,6 +795,12 @@ function renderRace() {
   const avgSale = revenueRows.length ? currentYtd / revenueRows.length : 0;
   const salesLeft = avgSale > 0 ? Math.ceil(toGo / avgSale) : 0;
 
+  const todayRows = raw.filter(r => (r.dk ? r.dk===todayKey : (r.m===currentMonth && r.dy===today.getDate())) && raceRevenue(r)!==0);
+  const todayRevenue = todayRows.reduce((s,r)=>s+raceRevenue(r),0);
+  const todayCount = todayRows.length;
+  const todayTarget = daysLeft ? (toGo + todayRevenue) / daysLeft : 0;
+  const todayDiff = todayRevenue - todayTarget;
+
   $('race-to-go').textContent = money(toGo);
   $('race-current-ytd').textContent = money(currentYtd)+' current';
   $('race-progress-pct').textContent = pct(progress)+' complete';
@@ -588,6 +813,37 @@ function renderRace() {
   $('race-sales-left').textContent = salesLeft.toLocaleString();
   $('race-avg-sale').textContent = 'At '+money(avgSale)+' current avg sale';
 
+  const history=$('race-history');
+  if(currentYtd >= RACE_HISTORY_GOAL){
+    history.classList.add('achieved');
+    $('race-history-label').textContent='FIRST $2 MILLION YEAR ✓';
+    $('race-history-value').textContent='HISTORY MADE';
+    $('race-history-sub').textContent='Now let’s see how far we can go — '+money(toGo)+' to the $2.35M stretch finish.';
+  } else {
+    history.classList.remove('achieved');
+    $('race-history-label').textContent='FIRST $2 MILLION YEAR';
+    $('race-history-value').textContent=money(toHistory)+' TO HISTORY';
+    let msg='A milestone Blackberry Creek Mattress has chased for years.';
+    if(toHistory<=avgSale && avgSale>0) msg='ONE GREAT SALE COULD MAKE HISTORY.';
+    else if(toHistory<=10000) msg='CLOSER THAN WE’VE EVER BEEN.';
+    else if(toHistory<=50000) msg='THE FINAL $50K TO A FIRST-EVER $2 MILLION YEAR.';
+    else if(toHistory<=100000) msg='THE FINAL $100K TO HISTORY.';
+    $('race-history-sub').textContent=msg;
+  }
+
+  $('race-today-sales').textContent=money(todayRevenue);
+  $('race-today-count').textContent=todayCount+' '+(todayCount===1?'sale':'sales')+' entered today';
+  $('race-today-target').textContent=money(todayTarget);
+  const todayStatus=$('race-today-status');
+  const todayCard=$('race-today-status-card');
+  todayStatus.textContent=(todayDiff>=0?'+':'-')+money(Math.abs(todayDiff));
+  todayStatus.className='race-today-value '+(todayDiff>=0?'race-pace-good':'race-pace-bad');
+  todayCard.classList.toggle('win',todayDiff>=0);
+  todayCard.classList.toggle('chase',todayDiff<0);
+  $('race-today-status-sub').textContent=todayDiff>=0 ? 'TODAY’S PACE ACHIEVED ✓' : 'needed to win today';
+  $('race-to-2m').textContent=currentYtd>=RACE_HISTORY_GOAL ? 'ACHIEVED ✓' : money(toHistory);
+  $('race-to-2m-sub').textContent=currentYtd>=RACE_HISTORY_GOAL ? 'First $2 million year' : 'First time in BCM history';
+
   const paceEl = $('race-pace-status');
   paceEl.textContent = (paceDiff>=0?'+':'-')+money(Math.abs(paceDiff));
   paceEl.className = 'race-stat-value '+(paceDiff>=0?'race-pace-good':'race-pace-bad');
@@ -597,10 +853,10 @@ function renderRace() {
   $('race-milestones').innerHTML = milestones.map(v=>{
     const hit = currentYtd >= v;
     const label = v===2350000 ? '$2.35M' : '$'+(v/1000000).toFixed(1)+'M';
-    return '<div class="race-milestone '+(hit?'hit':'')+'"><span class="race-milestone-dot"></span>'+label+'</div>';
+    const special = v===2000000 ? ' title="Historic first $2 million year"' : '';
+    return '<div class="race-milestone '+(hit?'hit':'')+'"'+special+'><span class="race-milestone-dot"></span>'+label+(v===2000000?'<br>HISTORY':'')+'</div>';
   }).join('');
 
-  const currentMonth = MONTHS[new Date().getMonth()];
   $('race-months').innerHTML = ['Oct','Nov','Dec'].map(mo=>{
     const actual = q4Rows.filter(r=>r.m===mo).reduce((s,r)=>s+raceRevenue(r),0);
     const goal = RACE_MONTH_STRETCH[mo];
@@ -1443,10 +1699,24 @@ async function fetchLive(url) {
       if (!csv.trim().startsWith('Date') && !csv.includes(',')) continue;
       const parsed = parseCSV(csv);
       if (parsed.length > 0) {
+        const newRevenue = parsed.reduce((s,r)=>s+raceRevenue(r),0);
+        const newSalesCount = parsed.filter(r=>raceRevenue(r)!==0).length;
+        const oldRevenue = lastLiveRaceRevenue;
+        const oldSalesCount = lastLiveRaceSalesCount;
         liveData = parsed;
         const now = new Date().toLocaleTimeString();
-        setStatus('live', `🟢 Live · Updated ${now} · ${parsed.length} transactions · auto-refreshes every 5 min`);
+        setStatus('live', `🟢 Live · Updated ${now} · ${parsed.length} transactions · auto-refreshes every 60 sec`);
         render();
+
+        if (oldRevenue !== null && newRevenue > oldRevenue + 0.009) {
+          const delta = newRevenue - oldRevenue;
+          const countDiff = oldSalesCount===null ? 1 : Math.max(1,newSalesCount-oldSalesCount);
+          animateRaceCountdown(oldRevenue,newRevenue);
+          showNewSale(delta,newRevenue,countDiff);
+          checkRaceMilestones(oldRevenue,newRevenue);
+        }
+        lastLiveRaceRevenue = newRevenue;
+        lastLiveRaceSalesCount = newSalesCount;
         return;
       }
     } catch(e) {
@@ -1524,8 +1794,15 @@ function parseCSV(csv) {
     let loc = str(CI.loc);
     if (!loc && cols.length > 61) loc = (cols[61]||'').trim();
     if (!rep || !loc) return;
-    let month = '', dayOfMonth = 0;
-    try { const d = new Date(str(CI.date)); if (!isNaN(d)) { month = MO[String(d.getMonth()+1).padStart(2,'0')]||''; dayOfMonth = d.getDate(); } } catch(e) {}
+    let month = '', dayOfMonth = 0, dateKey = '';
+    try {
+      const d = new Date(str(CI.date));
+      if (!isNaN(d)) {
+        month = MO[String(d.getMonth()+1).padStart(2,'0')]||'';
+        dayOfMonth = d.getDate();
+        dateKey = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+      }
+    } catch(e) {}
     if (!month) return;
     const ctRaw = (cols[CI.ctype]||'').replace(/"/g,'');
     // 1st Homeowner always wins — JotForm allows multi-select so Returning/Comeback can co-exist with 1st Homeowner
@@ -1538,7 +1815,7 @@ function parseCSV(csv) {
     const isWebSale = ctRaw.includes('Website Sale');  // excluded from protector % denominator
     const bedroom = (cols[CI.bedroom]||'').replace(/"/g,'').toLowerCase();
     records.push({
-      m: month, dy: dayOfMonth, r: rep==='Rebecca'?'Becca':rep, l: loc==='Foscoe'?'F':'M',
+      m: month, dy: dayOfMonth, dk: dateKey, r: rep==='Rebecca'?'Becca':rep, l: loc==='Foscoe'?'F':'M',
       rr: num(CI.totalAmt) + num(CI.nmAmt) + num(CI.slAmt),
       s: (isMatt||isNonMatt)?1:0,
       t: isMatt ? num(CI.totalAmt) : (isNonMatt ? (() => { const aw=num(CI.nmAmt), ay=num(CI.slAmt), ab=num(CI.baseAmt); return (aw||ay) ? (aw+ay) : ab; })() : (isExchange ? num(CI.totalAmt) : 0)),  // Mattress=ColM, NonMatt=AW+AY if present else AP (standalone AB only), CE=ColM
@@ -1584,7 +1861,7 @@ function connectSheet() {
 // ── INIT ─────────────────────────────────────────────────────────────────────
 render();
 fetchLive();
-setInterval(() => fetchLive(), 5 * 60 * 1000);
+setInterval(() => fetchLive(), 60 * 1000);
 </script>
 </body>
 </html>
