@@ -143,6 +143,56 @@ tr:nth-child(even) td { background: #f9fafb; }
 .lb-empty { opacity: 0.4; }
 .lb-val.good { color: var(--green); }
 .lb-val.bad { color: var(--red); }
+
+/* Q4 RACE SCOREBOARD */
+.race-shell { max-width: 1180px; margin: 0 auto; }
+.race-hero { background: var(--navy); color: white; border-radius: 16px; padding: 28px 30px 24px; box-shadow: 0 8px 24px rgba(11,46,124,0.18); margin-bottom: 16px; }
+.race-kicker { color: #cbd5e1; font-size: 10px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; text-align: center; }
+.race-title { color: var(--gold); font-size: clamp(22px,4vw,38px); font-weight: 900; text-align: center; letter-spacing: -.03em; margin-top: 4px; }
+.race-to-go { font-size: clamp(48px,8vw,82px); line-height: 1; font-weight: 900; text-align: center; margin-top: 18px; letter-spacing: -.05em; }
+.race-to-go-label { text-align: center; color: #cbd5e1; font-size: 12px; font-weight: 800; letter-spacing: .16em; margin-top: 5px; }
+.race-progress-meta { display:flex; justify-content:space-between; gap:12px; margin-top:22px; font-size:12px; color:#e2e8f0; font-weight:700; }
+.race-track { height: 18px; background: rgba(255,255,255,.17); border-radius: 999px; overflow:hidden; margin-top:8px; border:1px solid rgba(255,255,255,.14); }
+.race-fill { height:100%; background: var(--gold); border-radius:999px; transition:width .6s ease; min-width:2px; }
+.race-milestones { display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-top:10px; }
+.race-milestone { text-align:center; font-size:9px; color:#94a3b8; font-weight:700; }
+.race-milestone.hit { color:#fde68a; }
+.race-milestone-dot { display:block; width:8px; height:8px; margin:0 auto 3px; border-radius:50%; background:#64748b; }
+.race-milestone.hit .race-milestone-dot { background:var(--gold); box-shadow:0 0 0 3px rgba(235,146,34,.18); }
+.race-status-strip { margin-top:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,.13); display:flex; justify-content:center; gap:14px; flex-wrap:wrap; font-size:11px; color:#cbd5e1; }
+.race-status-strip strong { color:white; }
+.race-stat-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+.race-stat { background:white; border-radius:12px; padding:16px; text-align:center; box-shadow:0 1px 4px rgba(11,46,124,.08); }
+.race-stat-label { font-size:9px; font-weight:800; color:var(--gray); text-transform:uppercase; letter-spacing:.08em; }
+.race-stat-value { font-size:26px; font-weight:900; color:var(--navy); margin-top:5px; line-height:1.1; }
+.race-stat-sub { font-size:10px; color:var(--gray); margin-top:4px; }
+.race-section-title { color:var(--navy); font-size:11px; font-weight:900; letter-spacing:.08em; text-transform:uppercase; margin:18px 0 8px; }
+.race-month-grid, .race-store-grid { display:grid; gap:12px; }
+.race-month-grid { grid-template-columns:repeat(3,1fr); }
+.race-store-grid { grid-template-columns:repeat(2,1fr); }
+.race-panel { background:white; border-radius:12px; padding:16px; box-shadow:0 1px 4px rgba(11,46,124,.08); }
+.race-panel-title { font-size:12px; font-weight:900; color:var(--navy); letter-spacing:.05em; }
+.race-panel-value { font-size:25px; font-weight:900; color:var(--navy); margin-top:7px; }
+.race-panel-sub { font-size:10px; color:var(--gray); margin-top:3px; }
+.race-panel-track { height:7px; background:#e5e7eb; border-radius:999px; margin-top:12px; overflow:hidden; }
+.race-panel-fill { height:100%; border-radius:999px; background:var(--gold); }
+.race-panel.active-month { outline:2px solid rgba(235,146,34,.45); }
+.race-panel.complete-month .race-panel-title::after { content:"  ✓"; color:var(--green); }
+.race-store-grid .race-panel:first-child { border-top:3px solid #4F86C6; }
+.race-store-grid .race-panel:last-child { border-top:3px solid var(--gold); }
+.race-pace-good { color:var(--green) !important; }
+.race-pace-bad { color:var(--red) !important; }
+@media (max-width: 800px) {
+  .race-stat-grid { grid-template-columns:repeat(2,1fr); }
+  .race-month-grid { grid-template-columns:1fr; }
+}
+@media (max-width: 520px) {
+  .race-hero { padding:22px 16px 18px; border-radius:12px; }
+  .race-stat-grid, .race-store-grid { grid-template-columns:1fr; }
+  .race-progress-meta { font-size:10px; }
+  .race-milestone { font-size:8px; }
+}
+
 </style>
 </head>
 <body>
@@ -174,7 +224,7 @@ tr:nth-child(even) td { background: #f9fafb; }
 
 
 
-<div class="filters">
+<div class="filters" id="dashboard-filters" style="display:none">
   <div class="filter-group">
     <span class="filter-label">Quarter</span>
     <select class="filter-select" id="f-quarter" onchange="onQuarterChange()">
@@ -213,7 +263,8 @@ tr:nth-child(even) td { background: #f9fafb; }
 </div>
 
 <div class="tabs">
-  <button class="tab active" onclick="showTab('overview',this)">Overview</button>
+  <button class="tab active" data-tab="race" onclick="showTab('race',this)">🏁 Race to $2.35M</button>
+  <button class="tab" onclick="showTab('overview',this)">Overview</button>
   <button class="tab" onclick="showTab('reps',this)">By Rep</button>
   <button class="tab" onclick="showTab('monthly',this)">Monthly</button>
   <button class="tab" onclick="showTab('vendors',this)">Vendors</button>
@@ -223,8 +274,62 @@ tr:nth-child(even) td { background: #f9fafb; }
 </div>
 
 <div class="content">
+
+  <!-- Q4 RACE TAB -->
+  <div id="tab-race">
+    <div class="race-shell">
+      <div class="race-hero">
+        <div class="race-kicker">Q4 2026 Team Scoreboard</div>
+        <div class="race-title">Race to $2.35 Million</div>
+        <div class="race-to-go" id="race-to-go">$—</div>
+        <div class="race-to-go-label">TO GO</div>
+        <div class="race-progress-meta">
+          <span id="race-current-ytd">$— current</span>
+          <span id="race-progress-pct">— complete</span>
+          <span>$2,350,000 finish</span>
+        </div>
+        <div class="race-track"><div class="race-fill" id="race-progress-fill" style="width:0%"></div></div>
+        <div class="race-milestones" id="race-milestones"></div>
+        <div class="race-status-strip">
+          <span>Q4 start: <strong id="race-q4-start">$—</strong></span>
+          <span>Q4 sales: <strong id="race-q4-actual">$—</strong></span>
+          <span>Original $2.10M goal: <strong id="race-original-goal">IN PROGRESS</strong></span>
+        </div>
+      </div>
+
+      <div class="race-stat-grid">
+        <div class="race-stat">
+          <div class="race-stat-label">Needed / Selling Day</div>
+          <div class="race-stat-value" id="race-daily-pace">$—</div>
+          <div class="race-stat-sub">Recalculates after every sale</div>
+        </div>
+        <div class="race-stat">
+          <div class="race-stat-label">Pace Status</div>
+          <div class="race-stat-value" id="race-pace-status">—</div>
+          <div class="race-stat-sub" id="race-pace-sub">vs straight-line Q4 pace</div>
+        </div>
+        <div class="race-stat">
+          <div class="race-stat-label">Selling Days Left</div>
+          <div class="race-stat-value" id="race-days-left">—</div>
+          <div class="race-stat-sub">Mon–Sat · closures excluded</div>
+        </div>
+        <div class="race-stat">
+          <div class="race-stat-label">Approx. Sales Left</div>
+          <div class="race-stat-value" id="race-sales-left">—</div>
+          <div class="race-stat-sub" id="race-avg-sale">Based on current average sale</div>
+        </div>
+      </div>
+
+      <div class="race-section-title">Monthly Stretch Races</div>
+      <div class="race-month-grid" id="race-months"></div>
+
+      <div class="race-section-title">Store Q4 Contribution</div>
+      <div class="race-store-grid" id="race-stores"></div>
+    </div>
+  </div>
+
   <!-- OVERVIEW TAB -->
-  <div id="tab-overview">
+  <div id="tab-overview" style="display:none">
     <div class="card-grid" id="kpi-cards"></div>
     <div class="attach-grid" id="attach-cards"></div>
     <div class="loc-grid" id="loc-cards"></div>
@@ -417,6 +522,116 @@ const CORS_PROXIES = [
 let liveData = null;
 let charts = {};
 
+const RACE_ANNUAL_GOAL = 2350000;
+const RACE_ORIGINAL_GOAL = 2100000;
+const RACE_MONTH_STRETCH = { Oct:190000, Nov:195000, Dec:140000 };
+const RACE_STORE_STRETCH = { F:310000, M:215000 };
+const RACE_HOLIDAYS = new Set(['2026-11-26','2026-12-24','2026-12-25']);
+
+function raceRevenue(row) {
+  return Number.isFinite(row.rr) ? row.rr : (Number.isFinite(row.t) ? row.t : 0);
+}
+function raceDateKey(d) {
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function isRaceSellingDay(d) {
+  return d.getDay() !== 0 && !RACE_HOLIDAYS.has(raceDateKey(d));
+}
+function countRaceSellingDays(start, end) {
+  if (end < start) return 0;
+  let n = 0;
+  const d = new Date(start.getFullYear(), start.getMonth(), start.getDate(), 12);
+  const stop = new Date(end.getFullYear(), end.getMonth(), end.getDate(), 12);
+  while (d <= stop) {
+    if (isRaceSellingDay(d)) n++;
+    d.setDate(d.getDate()+1);
+  }
+  return n;
+}
+function renderRace() {
+  const raw = liveData || RAW;
+  const q4Months = new Set(['Oct','Nov','Dec']);
+  const currentYtd = raw.reduce((s,r)=>s+raceRevenue(r),0);
+  const q4Rows = raw.filter(r=>q4Months.has(r.m));
+  const q4Actual = q4Rows.reduce((s,r)=>s+raceRevenue(r),0);
+  const q4Start = currentYtd - q4Actual;
+  const q4Target = Math.max(0, RACE_ANNUAL_GOAL - q4Start);
+  const toGo = Math.max(0, RACE_ANNUAL_GOAL - currentYtd);
+  const progress = Math.max(0, Math.min(1, currentYtd / RACE_ANNUAL_GOAL));
+
+  const q4StartDate = new Date(2026,9,1,12);
+  const q4EndDate = new Date(2026,11,31,12);
+  const todayNow = new Date();
+  const today = new Date(todayNow.getFullYear(), todayNow.getMonth(), todayNow.getDate(), 12);
+  const totalDays = countRaceSellingDays(q4StartDate, q4EndDate);
+  const remainingStart = today < q4StartDate ? q4StartDate : today;
+  const daysLeft = today > q4EndDate ? 0 : countRaceSellingDays(remainingStart, q4EndDate);
+  const elapsedEnd = today < q4StartDate ? new Date(2026,8,30,12) : (today > q4EndDate ? q4EndDate : today);
+  const elapsedDays = countRaceSellingDays(q4StartDate, elapsedEnd);
+  const targetThroughToday = totalDays ? q4Target * (elapsedDays / totalDays) : 0;
+  const paceDiff = q4Actual - targetThroughToday;
+  const dailyNeeded = daysLeft ? toGo / daysLeft : 0;
+
+  const revenueRows = raw.filter(r=>raceRevenue(r)!==0);
+  const avgSale = revenueRows.length ? currentYtd / revenueRows.length : 0;
+  const salesLeft = avgSale > 0 ? Math.ceil(toGo / avgSale) : 0;
+
+  $('race-to-go').textContent = money(toGo);
+  $('race-current-ytd').textContent = money(currentYtd)+' current';
+  $('race-progress-pct').textContent = pct(progress)+' complete';
+  $('race-progress-fill').style.width = (progress*100).toFixed(1)+'%';
+  $('race-q4-start').textContent = money(q4Start);
+  $('race-q4-actual').textContent = money(q4Actual);
+  $('race-original-goal').textContent = currentYtd >= RACE_ORIGINAL_GOAL ? 'ACHIEVED ✓' : 'IN PROGRESS';
+  $('race-daily-pace').textContent = money(dailyNeeded);
+  $('race-days-left').textContent = daysLeft.toLocaleString();
+  $('race-sales-left').textContent = salesLeft.toLocaleString();
+  $('race-avg-sale').textContent = 'At '+money(avgSale)+' current avg sale';
+
+  const paceEl = $('race-pace-status');
+  paceEl.textContent = (paceDiff>=0?'+':'-')+money(Math.abs(paceDiff));
+  paceEl.className = 'race-stat-value '+(paceDiff>=0?'race-pace-good':'race-pace-bad');
+  $('race-pace-sub').textContent = paceDiff>=0 ? 'ahead of straight-line Q4 pace' : 'behind straight-line Q4 pace';
+
+  const milestones = [1800000,1900000,2000000,2100000,2200000,2300000,2350000];
+  $('race-milestones').innerHTML = milestones.map(v=>{
+    const hit = currentYtd >= v;
+    const label = v===2350000 ? '$2.35M' : '$'+(v/1000000).toFixed(1)+'M';
+    return '<div class="race-milestone '+(hit?'hit':'')+'"><span class="race-milestone-dot"></span>'+label+'</div>';
+  }).join('');
+
+  const currentMonth = MONTHS[new Date().getMonth()];
+  $('race-months').innerHTML = ['Oct','Nov','Dec'].map(mo=>{
+    const actual = q4Rows.filter(r=>r.m===mo).reduce((s,r)=>s+raceRevenue(r),0);
+    const goal = RACE_MONTH_STRETCH[mo];
+    const ratio = goal ? Math.min(1, actual/goal) : 0;
+    const complete = actual >= goal;
+    const active = mo===currentMonth;
+    return '<div class="race-panel '+(active?'active-month ':'')+(complete?'complete-month':'')+'">'+
+      '<div class="race-panel-title">'+({Oct:'OCTOBER',Nov:'NOVEMBER',Dec:'DECEMBER'}[mo])+'</div>'+
+      '<div class="race-panel-value">'+money(actual)+'</div>'+
+      '<div class="race-panel-sub">of '+money(goal)+' stretch · '+pct(actual/goal)+'</div>'+
+      '<div class="race-panel-track"><div class="race-panel-fill" style="width:'+(ratio*100).toFixed(1)+'%"></div></div>'+
+      '</div>';
+  }).join('');
+
+  $('race-stores').innerHTML = [
+    {key:'F',name:'Foscoe'},
+    {key:'M',name:'Boone Mall'}
+  ].map(store=>{
+    const actual = q4Rows.filter(r=>r.l===store.key).reduce((s,r)=>s+raceRevenue(r),0);
+    const goal = RACE_STORE_STRETCH[store.key];
+    const ratio = goal ? Math.min(1,actual/goal) : 0;
+    return '<div class="race-panel">'+
+      '<div class="race-panel-title">'+store.name+'</div>'+
+      '<div class="race-panel-value">'+money(actual)+'</div>'+
+      '<div class="race-panel-sub">of '+money(goal)+' Q4 stretch · '+pct(actual/goal)+'</div>'+
+      '<div class="race-panel-track"><div class="race-panel-fill" style="width:'+(ratio*100).toFixed(1)+'%"></div></div>'+
+      '</div>';
+  }).join('');
+}
+
+
 // ── HELPERS ──────────────────────────────────────────────────────────────────
 const $ = id => document.getElementById(id);
 const money = n => !n || isNaN(n) ? '$0' : '$' + Math.round(n).toLocaleString();
@@ -515,6 +730,7 @@ function renderRepSummary(rows) {
 }
 
 function render() {
+  renderRace();
   const rows = getFiltered();
   const fq = $('f-quarter').value, fm = $('f-month').value, fl = $('f-loc').value, fr = $('f-rep').value;
   const mGoal = getGoal(fq, fm, fl, fr);
@@ -962,9 +1178,11 @@ function showTab(name, btn) {
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
   btn.dataset.tab = name;
-  ['overview','reps','monthly','vendors','exchanges','leaderboard'].forEach(t => {
+  ['race','overview','reps','monthly','vendors','exchanges','leaderboard'].forEach(t => {
     $('tab-'+t).style.display = t===name ? '' : 'none';
   });
+  const filters = $('dashboard-filters');
+  if (filters) filters.style.display = name==='race' ? 'none' : 'flex';
   const fq2 = $('f-quarter').value, fl2 = $('f-loc').value, fr2 = $('f-rep').value;
   const useQ1Ref2 = fq2 === 'Q1' && fl2 === 'All' && fr2 === 'All';
   if (name==='reps') renderReps(getFiltered(), useQ1Ref2);
@@ -1321,6 +1539,7 @@ function parseCSV(csv) {
     const bedroom = (cols[CI.bedroom]||'').replace(/"/g,'').toLowerCase();
     records.push({
       m: month, dy: dayOfMonth, r: rep==='Rebecca'?'Becca':rep, l: loc==='Foscoe'?'F':'M',
+      rr: num(CI.totalAmt) + num(CI.nmAmt) + num(CI.slAmt),
       s: (isMatt||isNonMatt)?1:0,
       t: isMatt ? num(CI.totalAmt) : (isNonMatt ? (() => { const aw=num(CI.nmAmt), ay=num(CI.slAmt), ab=num(CI.baseAmt); return (aw||ay) ? (aw+ay) : ab; })() : (isExchange ? num(CI.totalAmt) : 0)),  // Mattress=ColM, NonMatt=AW+AY if present else AP (standalone AB only), CE=ColM
       mt: isMatt?1:0,
