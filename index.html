@@ -1087,7 +1087,8 @@ function render() {
   // Use Q1 verified reference data when Q1 filter is active (no location/rep sub-filter)
   const useQ1Ref = false;  // Always use live data — Q1_REF hardcoded override removed
   const m = calc(rows);
-  const goalDiff = m.revenue - mGoal;
+  const authoritativeRevenue = rows.reduce((s,r)=>s+raceRevenue(r),0);
+  const goalDiff = authoritativeRevenue - mGoal;
 
   renderKPIs(m, mGoal, goalDiff, fl);
   renderAttach(m);
