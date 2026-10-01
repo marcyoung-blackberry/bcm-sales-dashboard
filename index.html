@@ -144,6 +144,32 @@ tr:nth-child(even) td { background: #f9fafb; }
 .lb-val.good { color: var(--green); }
 .lb-val.bad { color: var(--red); }
 
+/* PERFORMANCE / OVERALL / TEAM WINS */
+.page-intro { margin-bottom:14px; }
+.page-title { font-size:20px; font-weight:900; color:var(--navy); }
+.page-subtitle { font-size:11px; color:var(--gray); margin-top:3px; }
+.overall-company { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:16px; }
+.overall-stores { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:16px; }
+.overall-card { background:white; border-radius:12px; padding:16px; box-shadow:0 1px 4px rgba(11,46,124,.08); }
+.overall-card h3 { color:var(--navy); font-size:14px; margin-bottom:10px; }
+.overall-metrics { display:grid; grid-template-columns:repeat(2,1fr); gap:8px 12px; }
+.overall-metric-label { font-size:9px; color:var(--gray); font-weight:800; text-transform:uppercase; letter-spacing:.05em; }
+.overall-metric-value { font-size:18px; color:var(--navy); font-weight:900; margin-top:2px; }
+.overall-note { font-size:10px; color:var(--gray); margin-top:8px; }
+.teamwins-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px; }
+.teamwin-card { background:white; border-radius:12px; box-shadow:0 1px 4px rgba(11,46,124,.08); overflow:hidden; }
+.teamwin-head { background:var(--navy); color:white; padding:12px 14px; }
+.teamwin-title { font-size:12px; font-weight:900; }
+.teamwin-target { color:#cbd5e1; font-size:9px; margin-top:2px; }
+.teamwin-body { padding:10px 14px; }
+.teamwin-row { display:flex; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid var(--border); font-size:12px; }
+.teamwin-row:last-child { border-bottom:0; }
+.teamwin-name { font-weight:800; color:var(--navy); }
+.teamwin-val { font-weight:900; color:var(--green); }
+.teamwin-empty { font-size:11px; color:var(--gray); padding:6px 0; }
+@media(max-width:800px){.overall-company{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:560px){.overall-company,.overall-stores{grid-template-columns:1fr}.overall-metrics{grid-template-columns:1fr 1fr}}
+
 /* Q4 RACE SCOREBOARD */
 .race-shell { max-width: 1180px; margin: 0 auto; }
 .race-hero { background: var(--navy); color: white; border-radius: 16px; padding: 28px 30px 24px; box-shadow: 0 8px 24px rgba(11,46,124,0.18); margin-bottom: 16px; }
@@ -303,14 +329,14 @@ tr:nth-child(even) td { background: #f9fafb; }
 
 <div class="tabs">
   <button class="tab active" data-tab="race" onclick="showTab('race',this)">🏁 Race to $2.35M</button>
-  <button class="tab" onclick="showTab('overview',this)">Overview</button>
-  <button class="tab" onclick="showTab('reps',this)">By Rep</button>
-  <button class="tab" onclick="showTab('monthly',this)">Monthly</button>
-  <button class="tab" onclick="showTab('vendors',this)">Vendors</button>
-  <button class="tab" onclick="showTab('exchanges',this)">Exchanges</button>
-  <button class="tab" onclick="showTab('leaderboard',this)">🏆 Leaderboard</button>
-
+  <button class="tab" data-tab="overview" onclick="showTab('overview',this)">Performance</button>
+  <button class="tab" data-tab="overall" onclick="showTab('overall',this)">Overall</button>
+  <button class="tab" data-tab="reps" onclick="showTab('reps',this)">By Rep</button>
+  <button class="tab" data-tab="monthly" onclick="showTab('monthly',this)">Monthly</button>
+  <button class="tab" data-tab="teamwins" onclick="showTab('teamwins',this)">Team Wins</button>
 </div>
+
+<div class="content"></div>
 
 <div class="content">
 
@@ -403,12 +429,34 @@ tr:nth-child(even) td { background: #f9fafb; }
     </div>
   </div>
 
+
+  <!-- OVERALL TAB -->
+  <div id="tab-overall" style="display:none">
+    <div class="page-intro">
+      <div class="page-title">Overall Business Performance</div>
+      <div class="page-subtitle" id="overall-period-label">Company, stores and salespeople compared with the same period last year.</div>
+    </div>
+
+    <div class="section-header">Company</div>
+    <div class="overall-company" id="overall-company"></div>
+
+    <div class="section-header">Store Comparison</div>
+    <div class="overall-stores" id="overall-stores"></div>
+
+    <div class="section-header">Salesperson Year-over-Year</div>
+    <div class="table-wrap"><table id="overall-reps-table"></table></div>
+    <div class="overall-note">Salesperson prior-year figures come from the verified 2025 weekly sales scoreboards. Company and store comparisons use the 2025 daily sales history.</div>
+  </div>
+
   <!-- OVERVIEW TAB -->
   <div id="tab-overview" style="display:none">
+    <div class="page-intro">
+      <div class="page-title">Performance</div>
+      <div class="page-subtitle">The handful of numbers the team can influence right now.</div>
+    </div>
     <div class="card-grid" id="kpi-cards"></div>
+    <div class="race-section-title">Complete Sale Performance</div>
     <div class="attach-grid" id="attach-cards"></div>
-    <div class="loc-grid" id="loc-cards"></div>
-    <div id="rep-summary-wrap"></div>
     <div class="chart-wrap">
       <div class="chart-title">Monthly Revenue — 2026 vs Goal</div>
       <div class="chart-container"><canvas id="revenue-chart"></canvas></div>
@@ -434,45 +482,14 @@ tr:nth-child(even) td { background: #f9fafb; }
     <div class="table-wrap"><table id="attach-table"></table></div>
   </div>
 
-  <!-- VENDORS TAB -->
-  <div id="tab-vendors" style="display:none">
-    <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;flex-wrap:wrap;justify-content:space-between">
-      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-        <div class="section-header" style="margin:0">Q1 2026 Vendor Performance</div>
-        <div style="display:flex;gap:8px">
-          <button class="btn-sm" id="vl-all" onclick="setVendorLoc('all',this)" style="background:var(--navy);color:white;border-color:var(--navy)">Both Stores</button>
-          <button class="btn-sm" id="vl-F" onclick="setVendorLoc('F',this)">Foscoe</button>
-          <button class="btn-sm" id="vl-M" onclick="setVendorLoc('M',this)">Mall</button>
-        </div>
-      </div>
-      <div id="vendor-updated-label" style="font-size:11px;color:#64748b;font-style:italic"></div>
-    </div>
-    <div class="table-wrap"><table id="vendor-table"></table></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
-      <div class="chart-wrap">
-        <div class="chart-title">Revenue Share</div>
-        <div class="chart-container"><canvas id="vendor-chart"></canvas></div>
-      </div>
-      <div class="chart-wrap">
-        <div class="chart-title">Gross Margin % by Vendor</div>
-        <div class="chart-container"><canvas id="vendor-gm-chart"></canvas></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- EXCHANGES TAB -->
-  <div id="tab-exchanges" style="display:none">
-    <div class="section-header">Comfort Exchanges</div>
-    <div class="table-wrap"><table id="exchange-table"></table></div>
-  </div>
-
+  <!-- Q1 SUMMARY TAB -->
   <!-- Q1 SUMMARY TAB -->
 
-  <!-- LEADERBOARD TAB -->
-  <div id="tab-leaderboard" style="display:none">
-    <div class="section-header" style="margin-bottom:4px">Sales Leaderboard</div>
-    <div style="font-size:11px;color:var(--gray);margin-bottom:16px">Rankings update with your current Quarter / Month / Location filters</div>
-    <div id="leaderboard-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px"></div>
+  <!-- TEAM WINS TAB -->
+  <div id="tab-teamwins" style="display:none">
+    <div class="section-header" style="margin-bottom:4px">Team Wins</div>
+    <div style="font-size:11px;color:var(--gray);margin-bottom:16px">Celebrate controllable behaviors and goal-hitting execution — not just who had the most floor opportunities.</div>
+    <div id="teamwins-grid" class="teamwins-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:20px"></div>
   </div>
 
 </div>
@@ -554,6 +571,10 @@ const Y25 = {
 };
 // Legacy monthly totals (used by Monthly tab)
 const Y25_MONTHLY = { Jan:103472,Feb:114605,Mar:124372,Apr:131757,May:234993,Jun:207167,Jul:184647,Aug:223913,Sep:145896,Oct:153895,Nov:150501,Dec:118879 };
+
+const Y25_REP_MONTHLY_JAN_SEP = {"Becca":[52209,24434,35513,38720,43175,53841,78666,70486,32095],"Vance":[13577,17886,12729,29556,16717,33900,12879,26489,25828],"Patrick":[17727,34293,47563,26191,56067,54209,37287,65412,58340],"Marc":[7104,12850,7545,16123,67426,35135,35179,31644,16770],"Brandon":[16398,32185,23417,25230,56225,35026,26573,32826,24783]};
+const Y25_REP_Q4_DAILY = {"2025-10-03":{"Becca":275,"Patrick":3523,"Brandon":3274},"2025-10-02":{"Vance":474,"Patrick":875,"Marc":300},"2025-10-04":{"Marc":6672,"Brandon":5961},"2025-10-10":{"Becca":4243,"Vance":3509},"2025-10-07":{"Vance":2099},"2025-10-08":{"Vance":1830},"2025-10-09":{"Vance":1834,"Patrick":75},"2025-10-11":{"Vance":3948,"Patrick":267},"2025-10-06":{"Brandon":2699},"2025-10-13":{"Becca":9754,"Marc":3112},"2025-10-14":{"Becca":746,"Vance":300,"Patrick":378,"Marc":249},"2025-10-15":{"Becca":3930,"Vance":125,"Marc":477},"2025-10-16":{"Becca":699,"Vance":400,"Patrick":2861},"2025-10-17":{"Becca":1673,"Vance":4327,"Patrick":317},"2025-10-18":{"Vance":1099,"Patrick":6385},"2025-10-20":{"Becca":11089,"Marc":6883},"2025-10-21":{"Becca":1268,"Vance":874},"2025-10-23":{"Becca":404,"Vance":259},"2025-10-24":{"Becca":2366},"2025-10-22":{"Vance":4686,"Patrick":2874},"2025-10-25":{"Vance":21787,"Marc":5149},"2025-10-27":{"Becca":5372,"Vance":4600,"Marc":2338},"2025-10-28":{"Becca":1418,"Patrick":60},"2025-10-29":{"Becca":1299,"Patrick":2123},"2025-10-30":{"Becca":100,"Vance":974,"Patrick":1173},"2025-10-31":{"Becca":1544,"Patrick":1233},"2025-11-02":{"Patrick":799,"Brandon":599},"2025-11-01":{"Marc":6440,"Brandon":3948},"2025-11-06":{"Vance":2099,"Patrick":2252},"2025-11-05":{"Patrick":4357},"2025-11-07":{"Patrick":4808,"Brandon":7410},"2025-11-08":{"Patrick":2587,"Brandon":5143},"2025-11-03":{"Marc":479},"2025-11-13":{"Becca":330},"2025-11-14":{"Becca":970,"Patrick":3022},"2025-11-15":{"Becca":1598,"Patrick":5972,"Marc":2374,"Brandon":7269},"2025-11-11":{"Vance":1258,"Patrick":1293,"Marc":494},"2025-11-12":{"Vance":3635,"Patrick":7165,"Marc":7290},"2025-11-10":{"Patrick":1519,"Brandon":358},"2025-11-17":{"Becca":2800,"Marc":772,"Brandon":799},"2025-11-18":{"Becca":12983,"Vance":279,"Patrick":3099},"2025-11-19":{"Becca":9466,"Vance":485,"Patrick":2572},"2025-11-21":{"Becca":499,"Vance":3556,"Patrick":5418,"Marc":2234,"Brandon":2574},"2025-11-22":{"Marc":5583,"Brandon":3147},"2025-12-01":{"Becca":279,"Vance":358,"Patrick":15077,"Marc":138,"Brandon":7421},"2025-12-02":{"Becca":3404,"Marc":79},"2025-12-03":{"Becca":3118,"Patrick":1034,"Marc":924},"2025-12-06":{"Brandon":2174},"2025-12-11":{"Becca":299},"2025-12-09":{"Vance":229,"Marc":147},"2025-12-10":{"Patrick":676},"2025-12-12":{"Patrick":150},"2025-12-13":{"Patrick":1743},"2025-12-08":{"Marc":699},"2025-12-15":{"Becca":2608,"Vance":4008,"Patrick":374,"Brandon":1173},"2025-12-16":{"Becca":300,"Patrick":3176},"2025-12-17":{"Becca":2391,"Patrick":399},"2025-12-18":{"Becca":2463,"Patrick":2039},"2025-12-19":{"Becca":207,"Marc":2648,"Brandon":274},"2025-12-20":{"Patrick":279,"Brandon":879},"2025-12-23":{"Becca":10844,"Patrick":6533,"Brandon":4697},"2025-12-26":{"Becca":7872,"Marc":120},"2025-12-22":{"Patrick":129,"Brandon":3799},"2025-12-27":{"Marc":4278},"2025-12-29":{"Becca":269,"Patrick":578,"Marc":3458},"2025-12-30":{"Becca":5575,"Patrick":7497},"2025-12-31":{"Becca":3598,"Patrick":2788}};
+
 
 // ── YOY HELPER FUNCTIONS ─────────────────────────────────────────────────────
 // Sum Y25 daily data for a store (F, M, or both) over a date range
@@ -958,6 +979,78 @@ function getFiltered() {
 
 // ── RENDER ───────────────────────────────────────────────────────────────────
 
+
+function currentRowsThroughYesterday() {
+  const raw = liveData || RAW;
+  const y = new Date(); y.setDate(y.getDate()-1);
+  const cutoffMonth = y.getMonth();
+  const cutoffDay = y.getDate();
+  return raw.filter(r => {
+    const mi = MONTHS.indexOf(r.m);
+    if (mi < 0) return false;
+    if (mi < cutoffMonth) return true;
+    if (mi > cutoffMonth) return false;
+    return (r.dy||0) <= cutoffDay;
+  });
+}
+function rep2025ThroughYesterday(rep) {
+  const y = new Date(); y.setDate(y.getDate()-1);
+  const month = y.getMonth()+1, day = y.getDate();
+  const base = (Y25_REP_MONTHLY_JAN_SEP[rep]||[]).reduce((s,v,i)=>s+(i+1<=Math.min(month,9)?v:0),0);
+  if (month <= 9) return base;
+  const cutoff = '2025-'+String(month).padStart(2,'0')+'-'+String(day).padStart(2,'0');
+  let q4 = 0;
+  Object.entries(Y25_REP_Q4_DAILY).forEach(([date,vals]) => {
+    if (date <= cutoff) q4 += (vals[rep]||0);
+  });
+  return base + q4;
+}
+function renderOverall() {
+  const rows = currentRowsThroughYesterday();
+  const y = new Date(); y.setDate(y.getDate()-1);
+  const periodText = 'Through '+MONTHS[y.getMonth()]+' '+y.getDate()+', 2026 vs the same date in 2025';
+  const label = $('overall-period-label'); if(label) label.textContent = periodText;
+
+  const company26 = rows.reduce((s,r)=>s+raceRevenue(r),0);
+  const company25 = getYOY('All').ytd25;
+  const compDiff = company26-company25;
+  const compPct = company25 ? compDiff/company25 : 0;
+  $('overall-company').innerHTML = [
+    ['2026 YTD',money(company26),'Current revenue'],
+    ['2025 Same Period',money(company25),'Prior-year benchmark'],
+    ['Dollar Change',(compDiff>=0?'+':'')+money(compDiff),compDiff>=0?'Ahead of last year':'Behind last year',compDiff>=0?'good':'bad'],
+    ['YoY Growth',(compPct>=0?'+':'')+pct(compPct),'Year-over-year',compPct>=0?'good':'bad']
+  ].map(x=>'<div class="overall-card"><div class="overall-metric-label">'+x[0]+'</div><div class="overall-metric-value '+(x[3]||'')+'">'+x[1]+'</div><div class="overall-note">'+x[2]+'</div></div>').join('');
+
+  const stores=[
+    {key:'F',name:'Foscoe'},
+    {key:'M',name:'Boone Mall'}
+  ];
+  $('overall-stores').innerHTML = stores.map(st=>{
+    const cur=rows.filter(r=>r.l===st.key).reduce((s,r)=>s+raceRevenue(r),0);
+    const prev=getYOY(st.key).ytd25;
+    const diff=cur-prev, growth=prev?diff/prev:0;
+    return '<div class="overall-card"><h3>'+st.name+'</h3><div class="overall-metrics">'+
+      '<div><div class="overall-metric-label">2026 YTD</div><div class="overall-metric-value">'+money(cur)+'</div></div>'+
+      '<div><div class="overall-metric-label">2025 Same Period</div><div class="overall-metric-value">'+money(prev)+'</div></div>'+
+      '<div><div class="overall-metric-label">Change</div><div class="overall-metric-value '+(diff>=0?'good':'bad')+'">'+(diff>=0?'+':'')+money(diff)+'</div></div>'+
+      '<div><div class="overall-metric-label">YoY</div><div class="overall-metric-value '+(growth>=0?'good':'bad')+'">'+(growth>=0?'+':'')+pct(growth)+'</div></div>'+
+      '</div></div>';
+  }).join('');
+
+  const repRows=REPS.map(rep=>{
+    const curRows=rows.filter(r=>r.r===rep);
+    const cur=curRows.reduce((s,r)=>s+raceRevenue(r),0);
+    const prev=rep2025ThroughYesterday(rep);
+    const diff=cur-prev, growth=prev?diff/prev:0;
+    if(!cur && !prev) return '';
+    return '<tr><td>'+rep+'</td><td>'+money(cur)+'</td><td>'+money(prev)+'</td>'+
+      '<td class="'+(diff>=0?'good':'bad')+'">'+(diff>=0?'+':'')+money(diff)+'</td>'+
+      '<td class="'+(growth>=0?'good':'bad')+'">'+(growth>=0?'+':'')+pct(growth)+'</td></tr>';
+  }).filter(Boolean).join('');
+  $('overall-reps-table').innerHTML='<thead><tr><th style="text-align:left">Salesperson</th><th>2026 YTD</th><th>2025 Same Period</th><th>Change</th><th>YoY</th></tr></thead><tbody>'+repRows+'</tbody>';
+}
+
 function renderRepSummary(rows) {
   const wrap = $('rep-summary-wrap');
   if (!wrap) return;
@@ -998,109 +1091,67 @@ function render() {
 
   renderKPIs(m, mGoal, goalDiff, fl);
   renderAttach(m);
-  renderLoc(rows);
   renderRevenueChart(rows);
-  renderRepSummary(rows);
+  renderOverall();
 
   const tab = document.querySelector('.tab.active')?.dataset?.tab || 'overview';
   if (tab === 'reps' || $('tab-reps').style.display !== 'none') renderReps(rows, false);
   if (tab === 'monthly' || $('tab-monthly').style.display !== 'none') renderMonthly();
-  if (tab === 'vendors' || $('tab-vendors').style.display !== 'none') renderVendors(rows);
-  if (tab === 'exchanges' || $('tab-exchanges').style.display !== 'none') renderExchanges(rows);
-  if (tab === 'leaderboard' || $('tab-leaderboard').style.display !== 'none') renderLeaderboard(rows, false);
+  if (tab === 'teamwins' || $('tab-teamwins').style.display !== 'none') renderTeamWins(rows);
 }
 
 function renderKPIs(m, mGoal, goalDiff, fl) {
-  // YOY: single context-aware comparison based on active filter
   const raw = liveData || RAW;
-  const fq2 = $('f-quarter').value, fm2 = $('f-month').value;
-  var sc = (fl === 'F') ? 'F' : (fl === 'M') ? 'M' : 'All';
-  var yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
-  var yd = yesterday.getDate(), ym = yesterday.getMonth() + 1;
-  var MN = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  var Q_MO = {Q1:[1,2,3],Q2:[4,5,6],Q3:[7,8,9],Q4:[10,11,12]};
-  // Determine which period to compare
-  var cardLabel, cur26, prev25, subLabel;
-  function rev26range(startMo, startDay, endMo, endDay) {
-    return raw.filter(r => {
-      if (!r.s) return false;
-      if (sc !== 'All' && r.l !== sc) return false;
-      var rm = MN.indexOf(r.m)+1, rd = r.dy||0;
-      if (rm < startMo || rm > endMo) return false;
-      if (rm === startMo && rd < startDay) return false;
-      if (rm === endMo && rd > endDay) return false;
+  const fq = $('f-quarter').value, fm = $('f-month').value;
+  const sc = fl==='F' ? 'F' : fl==='M' ? 'M' : 'All';
+  const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
+  const yd=yesterday.getDate(), ym=yesterday.getMonth()+1;
+  const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const Q_MO={Q1:[1,2,3],Q2:[4,5,6],Q3:[7,8,9],Q4:[10,11,12]};
+  function rev26range(startMo,startDay,endMo,endDay){
+    return raw.filter(r=>{
+      if(sc!=='All'&&r.l!==sc)return false;
+      const rm=MN.indexOf(r.m)+1, rd=r.dy||0;
+      if(rm<startMo||rm>endMo)return false;
+      if(rm===startMo&&rd<startDay)return false;
+      if(rm===endMo&&rd>endDay)return false;
       return true;
-    }).reduce((s,r)=>s+r.t,0);
+    }).reduce((s,r)=>s+raceRevenue(r),0);
   }
-  if (fm2 !== 'All') {
-    // Specific month selected → MTD vs last year same month through same day
-    var moIdx = MN.indexOf(fm2)+1;
-    cur26 = rev26range(moIdx, 1, moIdx, yd);
-    prev25 = y25Sum(sc, moIdx, 1, moIdx, yd);
-    cardLabel = fm2 + ' vs Last Year';
-    subLabel = fm2 + ' 2026 vs ' + fm2 + ' 2025 (thru ' + fm2 + ' ' + yd + ')';
-  } else if (fq2 !== 'All') {
-    // Quarter selected → QTD vs last year same quarter through same day
-    var qMos = Q_MO[fq2];
-    var qStart = qMos[0], qEnd = Math.min(qMos[2], ym);
-    cur26 = rev26range(qStart, 1, qEnd, yd);
-    prev25 = y25Sum(sc, qStart, 1, qEnd, yd);
-    cardLabel = fq2 + ' vs Last Year';
-    subLabel = fq2 + ' 2026 vs ' + fq2 + ' 2025 (thru ' + MN[qEnd-1] + ' ' + yd + ')';
+  let cur26,prev25,label;
+  if(fm!=='All'){
+    const mi=MN.indexOf(fm)+1;
+    cur26=rev26range(mi,1,mi,yd); prev25=y25Sum(sc,mi,1,mi,yd); label=fm+' vs Last Year';
+  } else if(fq!=='All'){
+    const q=Q_MO[fq], end=Math.min(q[2],ym);
+    cur26=rev26range(q[0],1,end,yd); prev25=y25Sum(sc,q[0],1,end,yd); label=fq+' vs Last Year';
   } else {
-    // All months → YTD vs last year through same day
-    cur26 = rev26range(1, 1, ym, yd);
-    prev25 = y25Sum(sc, 1, 1, ym, yd);
-    cardLabel = 'YTD vs Last Year';
-    subLabel = 'Jan–' + MN[ym-1] + ' ' + yd + ', 2026 vs 2025';
+    cur26=rev26range(1,1,ym,yd); prev25=y25Sum(sc,1,1,ym,yd); label='YTD vs Last Year';
   }
-  var diff = cur26 - prev25;
-  var diffPct = prev25 ? (diff/prev25*100).toFixed(1)+'%' : '—';
-  var diffCls = diff >= 0 ? '#16a34a' : '#dc2626';
-  var yoyCard = `
-    <div class="card">
-      <div class="card-label">${cardLabel}</div>
-      <div class="card-value" style="color:${diffCls};font-size:20px">${diff>=0?'+':''}${money(diff)}</div>
-      <div class="card-sub" style="color:${diffCls};font-weight:700">${diff>=0?'+':''}${diffPct}</div>
-      <div style="font-size:9px;color:var(--gray);margin-top:2px">${subLabel}</div>
-    </div>`;
-  const kpis = [
-    {label:'Total Revenue', value:money(m.revenue), sub:`${m.n} sales closed`},
-    {label:'vs Goal', value:(goalDiff>=0?'+':'')+money(goalDiff), sub:`Goal: ${money(mGoal)}`, cls:colorDiff(goalDiff)},
-    null, // YOY card inserted here
-    {label:'Avg Ticket', value:money(m.at), sub:`${m.n} mattress sales`},
-    {label:'Close Rate', value:pct(m.cr,0), sub:'Target: 81%', cls:colorPct(m.cr,0.81)},
-    {label:'Accessory $', value:money(m.accDollars), sub:pct(m.accDollars/Math.max(m.revenue,1))+' of revenue'},
-    {label:'Reviews', value:m.reviews, sub:`${m.quotes} quotes out`},
+  const yoy=cur26-prev25, yoyPct=prev25?yoy/prev25:0;
+  const authoritativeRevenue=(getFiltered()).reduce((s,r)=>s+raceRevenue(r),0);
+  const kpis=[
+    {label:'Revenue',value:money(authoritativeRevenue),sub:m.n+' sales closed'},
+    {label:'vs Goal',value:(goalDiff>=0?'+':'')+money(goalDiff),sub:'Goal: '+money(mGoal),cls:colorDiff(goalDiff)},
+    {label:label,value:(yoy>=0?'+':'')+money(yoy),sub:(yoyPct>=0?'+':'')+pct(yoyPct),cls:yoy>=0?'good':'bad'},
+    {label:'Average Sale',value:money(m.at),sub:m.n+' sales'},
+    {label:'Close Rate',value:pct(m.cr,0),sub:'Target: 81%',cls:colorPct(m.cr,0.81)}
   ];
-  $('kpi-cards').innerHTML = kpis.map(k=> k===null ? yoyCard : `
-    <div class="card">
-      <div class="card-label">${k.label}</div>
-      <div class="card-value ${k.cls||''}">${k.value}</div>
-      <div class="card-sub">${k.sub}</div>
-    </div>`).join('');
+  $('kpi-cards').innerHTML=kpis.map(k=>'<div class="card"><div class="card-label">'+k.label+'</div><div class="card-value '+(k.cls||'')+'">'+k.value+'</div><div class="card-sub">'+k.sub+'</div></div>').join('');
 }
 
 function renderAttach(m) {
-  const attaches = [
-    {label:'Pillow', val:m.pi, target:0.45, note:'Target 45% · Q2'},
-    {label:'Protector (paid)', val:m.pr, target:0.75, note:'Target 75%'},
-    {label:'Base', val:m.ba, target:0.40, note:'Target 40% · master'},
-    {label:'Sheets', val:m.sh, target:0.20, note:'Target 20%'},
-    {label:'Complete Sleep System', val:m.css, target:0.30, note:'Prot+Pillow+Sheets · 30%'},
+  const attaches=[
+    {label:'Protector',val:m.pr,target:0.75,note:'Target 75%'},
+    {label:'Pillow',val:m.pi,target:0.45,note:'Target 45%'},
+    {label:'Sheets',val:m.sh,target:0.20,note:'Target 20%'},
+    {label:'Adjustable Base',val:m.ba,target:0.40,note:'Target 40% · eligible sales'}
   ];
-  $('attach-cards').innerHTML = attaches.map(a => {
-    const ratio = a.target ? a.val/a.target : 0;
-    const cls = ratio >= 1 ? 'good' : ratio >= 0.75 ? 'warn' : 'bad';
-    const barColor = ratio >= 1 ? '#16a34a' : ratio >= 0.75 ? '#d97706' : '#dc2626';
-    const barW = Math.min(100, ratio*100).toFixed(0);
-    return `
-    <div class="attach-card">
-      <div class="attach-label">${a.label}</div>
-      <div class="attach-value ${cls}">${pct(a.val)}</div>
-      <div class="attach-target">${a.note}</div>
-      <div class="progress-wrap"><div class="progress-bar" style="width:${barW}%;background:${barColor}"></div></div>
-    </div>`;
+  $('attach-cards').innerHTML=attaches.map(a=>{
+    const ratio=a.target?a.val/a.target:0;
+    const cls=ratio>=1?'good':ratio>=.75?'warn':'bad';
+    const barColor=ratio>=1?'#16a34a':ratio>=.75?'#d97706':'#dc2626';
+    return '<div class="attach-card"><div class="attach-label">'+a.label+'</div><div class="attach-value '+cls+'">'+pct(a.val)+'</div><div class="attach-target">'+a.note+'</div><div class="progress-wrap"><div class="progress-bar" style="width:'+Math.min(100,ratio*100).toFixed(0)+'%;background:'+barColor+'"></div></div></div>';
   }).join('');
 }
 
@@ -1434,140 +1485,39 @@ function showTab(name, btn) {
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
   btn.dataset.tab = name;
-  ['race','overview','reps','monthly','vendors','exchanges','leaderboard'].forEach(t => {
+  ['race','overview','overall','reps','monthly','teamwins'].forEach(t => {
     $('tab-'+t).style.display = t===name ? '' : 'none';
   });
   const filters = $('dashboard-filters');
-  if (filters) filters.style.display = name==='race' ? 'none' : 'flex';
+  if (filters) filters.style.display = (name==='race'||name==='overall') ? 'none' : 'flex';
   const fq2 = $('f-quarter').value, fl2 = $('f-loc').value, fr2 = $('f-rep').value;
   const useQ1Ref2 = fq2 === 'Q1' && fl2 === 'All' && fr2 === 'All';
   if (name==='reps') renderReps(getFiltered(), useQ1Ref2);
   if (name==='monthly') renderMonthly();
-  if (name==='vendors') renderVendors(getFiltered());
-  if (name==='exchanges') renderExchanges(getFiltered());
-  if (name==='leaderboard') renderLeaderboard(getFiltered(), useQ1Ref2);
+  if (name==='overall') renderOverall();
+  if (name==='teamwins') renderTeamWins(getFiltered());
 }
 
 // ── LEADERBOARD ──────────────────────────────────────────────────────────────
-function renderLeaderboard(rows, useQ1Ref) {
-  const MEDALS = [
-    { label: '🥇', cls: 'medal-gold',   rank: '1st' },
-    { label: '🥈', cls: 'medal-silver', rank: '2nd' },
-    { label: '🥉', cls: 'medal-bronze', rank: '3rd' }
+function renderTeamWins(rows) {
+  const stats=REPS.map(rep=>({rep,...calc(rows.filter(r=>r.r===rep))})).filter(x=>x.n>0);
+  const goals=[
+    {title:'Protector Goal Hitters',target:.75,key:'pr',label:'Target 75%'},
+    {title:'Pillow Goal Hitters',target:.45,key:'pi',label:'Target 45%'},
+    {title:'Sheets Goal Hitters',target:.20,key:'sh',label:'Target 20%'},
+    {title:'Adjustable Base Goal Hitters',target:.40,key:'ba',label:'Target 40%'}
   ];
-
-  // Build per-rep metrics (only reps with at least 1 sale)
-  const repStats = REPS.map(rep => {
-    const m = useQ1Ref && Q1_REF.reps[rep] ? Object.assign({}, Q1_REF.reps[rep]) : calc(rows.filter(r => r.r === rep));
-    return { rep, ...m };
-  }).filter(s => s.n > 0);
-
-  // Define the 6 KPI categories
-  const categories = [
-    {
-      id: 'total-sales',
-      title: 'Total Sales',
-      icon: '💰',
-      key: s => s.revenue,
-      fmt: s => money(s.revenue),
-      sub: s => `${s.n} sales closed`,
-      desc: 'Total revenue'
-    },
-    {
-      id: 'avg-sale',
-      title: 'Average Sale',
-      icon: '🎯',
-      key: s => s.at,
-      fmt: s => money(s.at),
-      sub: s => `${s.n} sales`,
-      desc: 'Avg ticket size'
-    },
-    {
-      id: 'close-rate',
-      title: 'Close Rate',
-      icon: '🔒',
-      key: s => s.cr,
-      fmt: s => pct(s.cr),
-      sub: s => `${s.n} of ${s.ups} ups`,
-      desc: 'Target: 81%',
-      target: 0.81
-    },
-    {
-      id: 'protector',
-      title: 'Mattress Protector',
-      icon: '🛡️',
-      key: s => s.pr,
-      fmt: s => pct(s.pr),
-      sub: s => `${s.nm} mattress sales`,
-      desc: 'Target: 75%',
-      target: 0.75
-    },
-    {
-      id: 'pillow',
-      title: 'Pillow Attachment',
-      icon: '🪶',
-      key: s => s.pi,
-      fmt: s => pct(s.pi),
-      sub: s => `${s.nm} mattress sales`,
-      desc: 'Target: 45%',
-      target: 0.45
-    },
-    {
-      id: 'base',
-      title: 'Adjustable Base',
-      icon: '⚙️',
-      key: s => s.ba,
-      fmt: s => pct(s.ba),
-      sub: s => `of master bedroom sales`,
-      desc: 'Target: 40%',
-      target: 0.40
-    }
-  ];
-
-  const html = categories.map(cat => {
-    // Sort reps by this KPI descending, filter out zero values for attachment rates
-    const sorted = [...repStats]
-      .filter(s => cat.id === 'total-sales' || cat.id === 'avg-sale' || cat.id === 'close-rate' ? true : cat.key(s) > 0)
-      .sort((a, b) => cat.key(b) - cat.key(a));
-
-    const top3 = sorted.slice(0, 3);
-
-    const podiumRows = top3.map((s, i) => {
-      const medal = MEDALS[i];
-      const val = cat.key(s);
-      const atTarget = cat.target ? val >= cat.target : true;
-      const valCls = cat.target ? (atTarget ? 'good' : 'bad') : '';
-      return `
-        <div class="lb-row ${medal.cls}">
-          <div class="lb-medal">${medal.label}</div>
-          <div class="lb-rep">${s.rep}</div>
-          <div class="lb-val ${valCls}">${cat.fmt(s)}</div>
-          <div class="lb-sub">${cat.sub(s)}</div>
-        </div>`;
-    }).join('');
-
-    const emptyRows = top3.length < 3 ? Array(3 - top3.length).fill('').map((_, i) => `
-        <div class="lb-row lb-empty">
-          <div class="lb-medal">${MEDALS[top3.length + i].label}</div>
-          <div class="lb-rep" style="color:var(--light)">No data</div>
-          <div class="lb-val">—</div>
-          <div class="lb-sub"></div>
-        </div>`).join('') : '';
-
-    return `
-      <div class="lb-card">
-        <div class="lb-header">
-          <span class="lb-icon">${cat.icon}</span>
-          <div>
-            <div class="lb-title">${cat.title}</div>
-            <div class="lb-desc">${cat.desc}</div>
-          </div>
-        </div>
-        <div class="lb-rows">${podiumRows}${emptyRows}</div>
-      </div>`;
+  let cards=goals.map(g=>{
+    const winners=stats.filter(s=>s[g.key]>=g.target).sort((a,b)=>b[g.key]-a[g.key]);
+    const body=winners.length?winners.map(s=>'<div class="teamwin-row"><span class="teamwin-name">'+s.rep+'</span><span class="teamwin-val">'+pct(s[g.key])+'</span></div>').join(''):'<div class="teamwin-empty">No one is at target yet. This is the next team win to chase.</div>';
+    return '<div class="teamwin-card"><div class="teamwin-head"><div class="teamwin-title">'+g.title+'</div><div class="teamwin-target">'+g.label+'</div></div><div class="teamwin-body">'+body+'</div></div>';
   }).join('');
-
-  $('leaderboard-grid').innerHTML = html;
+  const avg=[...stats].sort((a,b)=>b.at-a.at)[0];
+  const complete=stats.map(s=>({rep:s.rep,hits:[s.pr>=.75,s.pi>=.45,s.sh>=.20,s.ba>=.40].filter(Boolean).length})).sort((a,b)=>b.hits-a.hits);
+  const bestComplete=complete[0];
+  cards += '<div class="teamwin-card"><div class="teamwin-head"><div class="teamwin-title">Average Sale Spotlight</div><div class="teamwin-target">Strongest average ticket in the selected period</div></div><div class="teamwin-body">'+(avg?'<div class="teamwin-row"><span class="teamwin-name">'+avg.rep+'</span><span class="teamwin-val">'+money(avg.at)+'</span></div>':'<div class="teamwin-empty">No sales yet.</div>')+'</div></div>';
+  cards += '<div class="teamwin-card"><div class="teamwin-head"><div class="teamwin-title">Complete Sale Spotlight</div><div class="teamwin-target">Most attachment targets currently being hit</div></div><div class="teamwin-body">'+(bestComplete?'<div class="teamwin-row"><span class="teamwin-name">'+bestComplete.rep+'</span><span class="teamwin-val">'+bestComplete.hits+' of 4</span></div>':'<div class="teamwin-empty">No sales yet.</div>')+'</div></div>';
+  $('teamwins-grid').innerHTML=cards;
 }
 
 // ── QUARTER FILTER HELPER ─────────────────────────────────────────────────────
