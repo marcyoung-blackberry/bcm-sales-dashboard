@@ -290,7 +290,7 @@ tr:nth-child(even) td { background: #f9fafb; }
 
 
 <div class="filters" id="dashboard-filters" style="display:none">
-  <div class="filter-group">
+  <div class="filter-group" id="filter-quarter-group">
     <span class="filter-label">Quarter</span>
     <select class="filter-select" id="f-quarter" onchange="onQuarterChange()">
       <option value="All">All Quarters</option>
@@ -300,9 +300,9 @@ tr:nth-child(even) td { background: #f9fafb; }
       <option value="Q4">Q4 (Oct–Dec)</option>
     </select>
   </div>
-  <div class="filter-group">
+  <div class="filter-group" id="filter-month-group">
     <span class="filter-label">Month</span>
-    <select class="filter-select" id="f-month" onchange="render()">
+    <select class="filter-select" id="f-month" onchange="onMonthChange()">
       <option value="All">All Months</option>
       <option value="Jan">Jan</option><option value="Feb">Feb</option><option value="Mar">Mar</option>
       <option value="Apr">Apr</option><option value="May">May</option><option value="Jun">Jun</option>
@@ -310,7 +310,7 @@ tr:nth-child(even) td { background: #f9fafb; }
       <option value="Oct">Oct</option><option value="Nov">Nov</option><option value="Dec">Dec</option>
     </select>
   </div>
-  <div class="filter-group">
+  <div class="filter-group" id="filter-location-group">
     <span class="filter-label">Location</span>
     <select class="filter-select" id="f-loc" onchange="render()">
       <option value="All">Both Stores</option>
@@ -318,7 +318,7 @@ tr:nth-child(even) td { background: #f9fafb; }
       <option value="M">Mall</option>
     </select>
   </div>
-  <div class="filter-group">
+  <div class="filter-group" id="filter-rep-group">
     <span class="filter-label">Rep</span>
     <select class="filter-select" id="f-rep" onchange="render()">
       <option value="All">All Reps</option>
@@ -980,58 +980,98 @@ function getFiltered() {
 // ── RENDER ───────────────────────────────────────────────────────────────────
 
 
-function currentRowsThroughYesterday() {
-  const raw = liveData || RAW;
-  const y = new Date(); y.setDate(y.getDate()-1);
-  const cutoffMonth = y.getMonth();
-  const cutoffDay = y.getDate();
-  return raw.filter(r => {
-    const mi = MONTHS.indexOf(r.m);
-    if (mi < 0) return false;
-    if (mi < cutoffMonth) return true;
-    if (mi > cutoffMonth) return false;
-    return (r.dy||0) <= cutoffDay;
+
+function overallPeriodSpec() {
+  const fq=$('f-quarter').value, fm=$('f-month').value;
+  const now=new Date();
+  const currentMonth=now.getMonth()+1, currentDay=now.getDate();
+  const qMap={Q1:[1,3],Q2:[4,6],Q3:[7,9],Q4:[10,12]};
+  let startMonth=1,endMonth=currentMonth,endDay=currentDay,label='YTD';
+
+  if(fm!=='All'){
+    const mi=MONTHS.indexOf(fm)+1;
+    startMonth=endMonth=mi;
+    if(mi<currentMonth) endDay=new Date(2026,mi,0).getDate();
+    else if(mi===currentMonth) endDay=currentDay;
+    else endDay=0;
+    label=fm;
+  } else if(fq!=='All'){
+    const q=qMap[fq]; startMonth=q[0]; endMonth=q[1];
+    if(currentMonth<startMonth){ endMonth=startMonth; endDay=0; }
+    else if(currentMonth<=q[1]){ endMonth=currentMonth; endDay=currentDay; }
+    else { endDay=new Date(2026,q[1],0).getDate(); }
+    label=fq;
+  }
+  return {fq,fm,startMonth,endMonth,endDay,label};
+}
+function overallRowsForPeriod() {
+  const raw=liveData||RAW, p=overallPeriodSpec();
+  if(!p.endDay) return [];
+  return raw.filter(r=>{
+    const mi=MONTHS.indexOf(r.m)+1, day=r.dy||0;
+    if(mi<p.startMonth||mi>p.endMonth) return false;
+    if(mi===p.endMonth&&day>p.endDay) return false;
+    return true;
   });
 }
-function rep2025ThroughYesterday(rep) {
-  const y = new Date(); y.setDate(y.getDate()-1);
-  const month = y.getMonth()+1, day = y.getDate();
-  const base = (Y25_REP_MONTHLY_JAN_SEP[rep]||[]).reduce((s,v,i)=>s+(i+1<=Math.min(month,9)?v:0),0);
-  if (month <= 9) return base;
-  const cutoff = '2025-'+String(month).padStart(2,'0')+'-'+String(day).padStart(2,'0');
-  let q4 = 0;
-  Object.entries(Y25_REP_Q4_DAILY).forEach(([date,vals]) => {
-    if (date <= cutoff) q4 += (vals[rep]||0);
-  });
-  return base + q4;
+function priorStoreForPeriod(store) {
+  const p=overallPeriodSpec();
+  if(!p.endDay) return 0;
+  return y25Sum(store,p.startMonth,1,p.endMonth,p.endDay);
+}
+function rep2025ForPeriod(rep) {
+  const p=overallPeriodSpec();
+  if(!p.endDay) return 0;
+  let total=0;
+  // Jan-Sep are verified completed monthly totals.
+  const monthly=Y25_REP_MONTHLY_JAN_SEP[rep]||[];
+  for(let mo=p.startMonth;mo<=Math.min(p.endMonth,9);mo++) total += monthly[mo-1]||0;
+
+  // Q4 uses verified daily salesperson history, so partial current month/quarter is same-period accurate.
+  if(p.endMonth>=10){
+    Object.entries(Y25_REP_Q4_DAILY).forEach(([date,vals])=>{
+      const mo=Number(date.slice(5,7)), day=Number(date.slice(8,10));
+      if(mo<p.startMonth||mo>p.endMonth) return;
+      if(mo===p.endMonth&&day>p.endDay) return;
+      total += vals[rep]||0;
+    });
+  }
+  return total;
+}
+function overallPeriodDescription() {
+  const p=overallPeriodSpec();
+  if(!p.endDay) return p.label+' 2026 has not started yet.';
+  const currentMonth=new Date().getMonth()+1;
+  const isPartial=p.endMonth===currentMonth && p.endDay===new Date().getDate();
+  if(p.label==='YTD') return '2026 year-to-date through '+MONTHS[p.endMonth-1]+' '+p.endDay+' vs the same period in 2025';
+  if(isPartial) return p.label+' through '+MONTHS[p.endMonth-1]+' '+p.endDay+' vs the same period in 2025';
+  return p.label+' 2026 vs '+p.label+' 2025';
 }
 function renderOverall() {
-  const rows = currentRowsThroughYesterday();
-  const y = new Date(); y.setDate(y.getDate()-1);
-  const periodText = 'Through '+MONTHS[y.getMonth()]+' '+y.getDate()+', 2026 vs the same date in 2025';
-  const label = $('overall-period-label'); if(label) label.textContent = periodText;
+  const rows=overallRowsForPeriod();
+  const p=overallPeriodSpec();
+  const label=$('overall-period-label'); if(label) label.textContent=overallPeriodDescription();
 
-  const company26 = rows.reduce((s,r)=>s+raceRevenue(r),0);
-  const company25 = getYOY('All').ytd25;
-  const compDiff = company26-company25;
-  const compPct = company25 ? compDiff/company25 : 0;
-  $('overall-company').innerHTML = [
-    ['2026 YTD',money(company26),'Current revenue'],
+  const company26=rows.reduce((s,r)=>s+raceRevenue(r),0);
+  const company25=priorStoreForPeriod('All');
+  const compDiff=company26-company25;
+  const compPct=company25?compDiff/company25:0;
+  const periodName=p.label==='YTD'?'YTD':p.label;
+
+  $('overall-company').innerHTML=[
+    ['2026 '+periodName,money(company26),'Current-period revenue'],
     ['2025 Same Period',money(company25),'Prior-year benchmark'],
     ['Dollar Change',(compDiff>=0?'+':'')+money(compDiff),compDiff>=0?'Ahead of last year':'Behind last year',compDiff>=0?'good':'bad'],
     ['YoY Growth',(compPct>=0?'+':'')+pct(compPct),'Year-over-year',compPct>=0?'good':'bad']
   ].map(x=>'<div class="overall-card"><div class="overall-metric-label">'+x[0]+'</div><div class="overall-metric-value '+(x[3]||'')+'">'+x[1]+'</div><div class="overall-note">'+x[2]+'</div></div>').join('');
 
-  const stores=[
-    {key:'F',name:'Foscoe'},
-    {key:'M',name:'Boone Mall'}
-  ];
-  $('overall-stores').innerHTML = stores.map(st=>{
+  const stores=[{key:'F',name:'Foscoe'},{key:'M',name:'Boone Mall'}];
+  $('overall-stores').innerHTML=stores.map(st=>{
     const cur=rows.filter(r=>r.l===st.key).reduce((s,r)=>s+raceRevenue(r),0);
-    const prev=getYOY(st.key).ytd25;
-    const diff=cur-prev, growth=prev?diff/prev:0;
+    const prev=priorStoreForPeriod(st.key);
+    const diff=cur-prev,growth=prev?diff/prev:0;
     return '<div class="overall-card"><h3>'+st.name+'</h3><div class="overall-metrics">'+
-      '<div><div class="overall-metric-label">2026 YTD</div><div class="overall-metric-value">'+money(cur)+'</div></div>'+
+      '<div><div class="overall-metric-label">2026 '+periodName+'</div><div class="overall-metric-value">'+money(cur)+'</div></div>'+
       '<div><div class="overall-metric-label">2025 Same Period</div><div class="overall-metric-value">'+money(prev)+'</div></div>'+
       '<div><div class="overall-metric-label">Change</div><div class="overall-metric-value '+(diff>=0?'good':'bad')+'">'+(diff>=0?'+':'')+money(diff)+'</div></div>'+
       '<div><div class="overall-metric-label">YoY</div><div class="overall-metric-value '+(growth>=0?'good':'bad')+'">'+(growth>=0?'+':'')+pct(growth)+'</div></div>'+
@@ -1039,16 +1079,15 @@ function renderOverall() {
   }).join('');
 
   const repRows=REPS.map(rep=>{
-    const curRows=rows.filter(r=>r.r===rep);
-    const cur=curRows.reduce((s,r)=>s+raceRevenue(r),0);
-    const prev=rep2025ThroughYesterday(rep);
-    const diff=cur-prev, growth=prev?diff/prev:0;
-    if(!cur && !prev) return '';
+    const cur=rows.filter(r=>r.r===rep).reduce((s,r)=>s+raceRevenue(r),0);
+    const prev=rep2025ForPeriod(rep);
+    const diff=cur-prev,growth=prev?diff/prev:0;
+    if(!cur&&!prev) return '';
     return '<tr><td>'+rep+'</td><td>'+money(cur)+'</td><td>'+money(prev)+'</td>'+
       '<td class="'+(diff>=0?'good':'bad')+'">'+(diff>=0?'+':'')+money(diff)+'</td>'+
       '<td class="'+(growth>=0?'good':'bad')+'">'+(growth>=0?'+':'')+pct(growth)+'</td></tr>';
   }).filter(Boolean).join('');
-  $('overall-reps-table').innerHTML='<thead><tr><th style="text-align:left">Salesperson</th><th>2026 YTD</th><th>2025 Same Period</th><th>Change</th><th>YoY</th></tr></thead><tbody>'+repRows+'</tbody>';
+  $('overall-reps-table').innerHTML='<thead><tr><th style="text-align:left">Salesperson</th><th>2026 '+periodName+'</th><th>2025 Same Period</th><th>Change</th><th>YoY</th></tr></thead><tbody>'+repRows+'</tbody>';
 }
 
 function renderRepSummary(rows) {
@@ -1490,7 +1529,10 @@ function showTab(name, btn) {
     $('tab-'+t).style.display = t===name ? '' : 'none';
   });
   const filters = $('dashboard-filters');
-  if (filters) filters.style.display = (name==='race'||name==='overall') ? 'none' : 'flex';
+  if (filters) filters.style.display = name==='race' ? 'none' : 'flex';
+  const locGroup=$('filter-location-group'), repGroup=$('filter-rep-group');
+  if(locGroup) locGroup.style.display=name==='overall'?'none':'flex';
+  if(repGroup) repGroup.style.display=name==='overall'?'none':'flex';
   const fq2 = $('f-quarter').value, fl2 = $('f-loc').value, fr2 = $('f-rep').value;
   const useQ1Ref2 = fq2 === 'Q1' && fl2 === 'All' && fr2 === 'All';
   if (name==='reps') renderReps(getFiltered(), useQ1Ref2);
@@ -1523,9 +1565,13 @@ function renderTeamWins(rows) {
 
 // ── QUARTER FILTER HELPER ─────────────────────────────────────────────────────
 function onQuarterChange() {
-  // When a quarter is selected, reset the month filter to "All" so they don't conflict
   const fq = $('f-quarter').value;
   if (fq !== 'All') $('f-month').value = 'All';
+  render();
+}
+function onMonthChange() {
+  const fm = $('f-month').value;
+  if (fm !== 'All') $('f-quarter').value = 'All';
   render();
 }
 
