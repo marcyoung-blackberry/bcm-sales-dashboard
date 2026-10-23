@@ -16,14 +16,15 @@ exports.handler = async function(event) {
     const timestamp = String(Date.now());
     target.searchParams.set('timestamp', timestamp);
     target.searchParams.set('signature', createHmac('sha256', secret).update(timestamp).digest('hex'));
-    const response = await fetch(target, { signal: AbortSignal.timeout(25000), redirect: 'follow' });
-    if (!response.ok) return fail(502, 'Google Sheets is temporarily unavailable');
+    const response = await fetch(target, { signal: AbortSignal.timeout(50000), redirect: 'follow' });
+    if (!response.ok) { console.error('Sheets upstream HTTP status', response.status); return fail(502, 'Google Sheets is temporarily unavailable'); }
     const payload = await response.json();
     if (payload.schemaVersion !== 1 || typeof payload.csv !== 'string' || !payload.csv.startsWith('"Date",') || !Number.isFinite(Date.parse(payload.updatedAt))) {
       return fail(502, 'Google Sheets returned an invalid response');
     }
     return { statusCode: 200, headers: { ...headers, 'Content-Type': 'text/csv; charset=utf-8' }, body: payload.csv };
-  } catch {
+  } catch (error) {
+    console.error('Sheets request failed', error.name, error.cause?.code || '');
     return fail(502, 'Google Sheets is temporarily unavailable');
   }
 };
