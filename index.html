@@ -1671,7 +1671,7 @@ async function fetchLive() {
   liveRequestPending = true;
   if (!liveData) setStatus('loading', '🟡 Fetching live data from Google Sheets...');
   try {
-    const res = await fetch('/api/proxy', { signal: AbortSignal.timeout(30000), cache: 'no-store' });
+    const res = await fetch('/api/proxy', { signal: AbortSignal.timeout(55000), cache: 'no-store' });
     if (!res.ok) throw new Error('Connection unavailable');
     const csv = await res.text();
     if (!/^"?Date"?,/.test(csv)) throw new Error('Invalid response');
