@@ -271,21 +271,13 @@ tr:nth-child(even) td { background: #f9fafb; }
 </div>
 
 <div id="status-bar" class="status-bar status-static">
-  <span id="status-text">🔵 Static mode — Q1 2026 data · Connect Google Sheet to go live</span>
+  <span id="status-text">🟡 Loading current Google Sheets data...</span>
   <div style="display:flex;gap:8px;align-items:center">
-    <button class="btn-sm" onclick="toggleConnect()" id="connect-btn">Connect Google Sheet</button>
     <button class="btn-sm" id="refresh-btn" onclick="fetchLive()" style="display:none">Refresh now</button>
   </div>
 </div>
 
-<div class="connect-panel" id="connect-panel">
-  <h4>Connect Google Sheets CSV</h4>
-  <p>1. Google Sheet → File → Share → Publish to web → Form Responses tab → CSV → Publish<br>2. Copy the URL and paste below</p>
-  <div class="connect-row">
-    <input class="connect-input" id="sheet-url-input" type="text" placeholder="https://docs.google.com/spreadsheets/d/e/..." value="https://docs.google.com/spreadsheets/d/e/2PACX-1vRgZDVtNKOlTPI-m_i96nNrhxgZFODbjMC1kbWnM7kmmG3m1U-FRUBFZMIqWCD1OORxVAr9BnbyqIvj/pub?gid=22940601&single=true&output=csv"/>
-    <button class="btn-connect" onclick="connectSheet()">Connect</button>
-  </div>
-</div>
+
 
 
 
@@ -626,14 +618,6 @@ const Q1_REF = {
 };
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const REPS = ['Becca','Brandon','Patrick','Vance','Marc'];
-const SHEETS_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRgZDVtNKOlTPI-m_i96nNrhxgZFODbjMC1kbWnM7kmmG3m1U-FRUBFZMIqWCD1OORxVAr9BnbyqIvj/pub?gid=22940601&single=true&output=csv";
-// Netlify serverless proxy (primary) + public fallbacks
-const CORS_PROXIES = [
-  url => `/api/proxy?url=${encodeURIComponent(url)}`,
-  url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-  url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`
-];
-
 let liveData = null;
 let charts = {};
 
@@ -1677,54 +1661,47 @@ function setStatus(type, text) {
   const bar = $('status-bar');
   bar.className = 'status-bar status-'+type;
   $('status-text').textContent = text;
-  $('refresh-btn').style.display = type==='live' ? '' : 'none';
-  $('connect-btn').style.display = type==='live' ? 'none' : '';
+  $('refresh-btn').style.display = '';
 }
 
-async function fetchLive(url) {
-  const rawTarget = url || document.getElementById('sheet-url-input')?.value || SHEETS_URL;
-  if (!rawTarget) return;
-  setStatus('loading', '🟡 Fetching live data from Google Sheets...');
-
-  for (const proxyFn of CORS_PROXIES) {
-    try {
-      const proxyUrl = proxyFn(rawTarget);
-      const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(8000) });
-      if (!res.ok) continue;
-      const csv = await res.text();
-      // Sanity-check: response must look like CSV, not an error page
-      if (!csv.trim().startsWith('Date') && !csv.includes(',')) continue;
-      const parsed = parseCSV(csv);
-      if (parsed.length > 0) {
-        const newRevenue = parsed.reduce((s,r)=>s+raceRevenue(r),0);
-        const newSalesCount = parsed.filter(r=>raceRevenue(r)!==0).length;
-        const oldRevenue = lastLiveRaceRevenue;
-        const oldSalesCount = lastLiveRaceSalesCount;
-        liveData = parsed;
-        const now = new Date().toLocaleTimeString();
-        setStatus('live', `🟢 Live · Updated ${now} · ${parsed.length} transactions · auto-refreshes every 60 sec`);
-        render();
-
-        if (oldRevenue !== null && newRevenue > oldRevenue + 0.009) {
-          const delta = newRevenue - oldRevenue;
-          const countDiff = oldSalesCount===null ? 1 : Math.max(1,newSalesCount-oldSalesCount);
-          animateRaceCountdown(oldRevenue,newRevenue);
-          showNewSale(delta,newRevenue,countDiff);
-          checkRaceMilestones(oldRevenue,newRevenue);
-        }
-        lastLiveRaceRevenue = newRevenue;
-        lastLiveRaceSalesCount = newSalesCount;
-        return;
-      }
-    } catch(e) {
-      // This proxy failed — try the next one
-      continue;
+let liveRequestPending = false;
+let lastSuccessfulSync = null;
+async function fetchLive() {
+  if (liveRequestPending) return;
+  liveRequestPending = true;
+  if (!liveData) setStatus('loading', '🟡 Fetching live data from Google Sheets...');
+  try {
+    const res = await fetch('/api/proxy', { signal: AbortSignal.timeout(30000), cache: 'no-store' });
+    if (!res.ok) throw new Error('Connection unavailable');
+    const csv = await res.text();
+    if (!/^"?Date"?,/.test(csv)) throw new Error('Invalid response');
+    const parsed = parseCSV(csv);
+    if (!parsed.length) throw new Error('No valid transactions');
+    const newRevenue = parsed.reduce((s,r)=>s+raceRevenue(r),0);
+    const newSalesCount = parsed.filter(r=>raceRevenue(r)!==0).length;
+    const oldRevenue = lastLiveRaceRevenue;
+    const oldSalesCount = lastLiveRaceSalesCount;
+    liveData = parsed;
+    lastSuccessfulSync = new Date();
+    setStatus('live', `🟢 Live · Updated ${lastSuccessfulSync.toLocaleTimeString()} · ${parsed.length} transactions · auto-refreshes every 60 sec`);
+    render();
+    if (oldRevenue !== null && newRevenue > oldRevenue + 0.009) {
+      const delta = newRevenue - oldRevenue;
+      const countDiff = oldSalesCount===null ? 1 : Math.max(1,newSalesCount-oldSalesCount);
+      animateRaceCountdown(oldRevenue,newRevenue);
+      showNewSale(delta,newRevenue,countDiff);
+      checkRaceMilestones(oldRevenue,newRevenue);
     }
+    lastLiveRaceRevenue = newRevenue;
+    lastLiveRaceSalesCount = newSalesCount;
+  } catch {
+    setStatus('error', lastSuccessfulSync
+      ? `🔴 Connection interrupted · Showing last successful sync from ${lastSuccessfulSync.toLocaleTimeString()} · retrying every 60 sec`
+      : '🔴 Google Sheets unavailable · Showing an old snapshot, not current sales · retrying every 60 sec');
+    render();
+  } finally {
+    liveRequestPending = false;
   }
-
-  // All proxies failed — fall back to full static snapshot data
-  setStatus('error', '🔴 Could not reach Google Sheets — showing cached 2026 data');
-  render();
 }
 
 function parseCSV(csv) {
@@ -1843,17 +1820,6 @@ function parseCSV(csv) {
   return records;
 }
 
-
-function toggleConnect() {
-  const p = $("connect-panel");
-  p.classList.toggle("show");
-}
-
-function connectSheet() {
-  const url = $("sheet-url-input").value;
-  $("connect-panel").classList.remove("show");
-  fetchLive(url);
-}
 
 // ── INIT ─────────────────────────────────────────────────────────────────────
 render();
